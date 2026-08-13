@@ -1,4 +1,4 @@
-# hs 安装器(Windows)。用法:
+﻿# hs 安装器(Windows)。用法:
 #   irm https://raw.githubusercontent.com/superlcr/huasheng-cli/main/install.ps1 | iex
 #
 # 覆盖点(与 install.sh 同名同义):HS_BASE_URL / HS_INSTALL_DIR

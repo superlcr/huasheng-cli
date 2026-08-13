@@ -19,7 +19,7 @@ jobs:
     name: install.sh (bash + shellcheck)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: 语法解析
         run: bash -n install.sh
       - name: shellcheck
@@ -38,7 +38,7 @@ jobs:
     name: install.ps1 (PowerShell 解析)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: 语法解析(真解析器,不是正则)
         shell: pwsh
         run: |
@@ -51,19 +51,49 @@ jobs:
             exit 1
           }
           Write-Host "✓ install.ps1 语法通过"
+      - name: 编码 —— 有中文就必须有 BOM
+        shell: pwsh
+        run: |
+          # 🔴 Windows PowerShell 5.1(Windows 上默认那个)读**没有 BOM** 的 .ps1
+          #   按系统代码页解 —— 而这个脚本里有 21 处中文,没 BOM 就是一屏乱码。
+          #   走「手动下载再本地跑」那条路的用户会直接撞上。
+          $bytes = [System.IO.File]::ReadAllBytes('./install.ps1')
+          if ($bytes[0] -ne 0xEF -or $bytes[1] -ne 0xBB -or $bytes[2] -ne 0xBF) {
+            Write-Host "X install.ps1 缺 UTF-8 BOM —— PS 5.1 会把中文读成乱码"; exit 1
+          }
+          Write-Host "OK 有 BOM"
+
+      - name: BOM 不能把 irm-iex 那条路搞坏
+        shell: pwsh
+        run: |
+          # README 主推的装法是 `irm <url> | iex`,而 iex 收到的是**字符串**。
+          # 加 BOM 之后那个字符串开头可能多一个看不见的 U+FEFF,
+          # 足以让 iex 报「Unexpected token」—— 那等于把用户的第一条命令修坏了。
+          # 这里按 iex 的实际做法(拿一段原始文本建 ScriptBlock)验一遍。
+          $raw = Get-Content -Raw -Encoding UTF8 ./install.ps1
+          try { $null = [ScriptBlock]::Create($raw) }
+          catch { Write-Host "X 加了 BOM 之后 iex 那条路解析失败: $_"; exit 1 }
+          Write-Host "OK iex 路径照样解析得了"
+
       - name: PSScriptAnalyzer
         shell: pwsh
         run: |
           Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -ErrorAction Stop
-          $r = Invoke-ScriptAnalyzer -Path ./install.ps1 -Severity Error,Warning
+          # ★ PSAvoidUsingWriteHost 在这里是**假阳性**,故意排除:
+          #   那条规则是给模块和函数用的(怕污染管道),而 install.ps1 是个交互式安装器,
+          #   它的全部工作就是打字给人看。改成 Write-Output 反而会把进度信息
+          #   塞进 `irm | iex` 的返回值里。
+          #   假阳性留着不管,下一个人就会把整个 job 关掉 —— 那才是真正的损失。
+          $r = Invoke-ScriptAnalyzer -Path ./install.ps1 -Severity Error,Warning `
+                 -ExcludeRule PSAvoidUsingWriteHost
           if ($r) { $r | Format-Table -AutoSize | Out-String | Write-Host; exit 1 }
-          Write-Host "✓ 没有 Error/Warning 级问题"
+          Write-Host "OK 没有 Error/Warning 级问题(Write-Host 已按理由排除)"
 
   links:
     name: README 里的下载地址不能是死链
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: 两个安装脚本的 raw 地址真的能下到
         # README 让用户 `curl -fsSL <raw 地址> | sh`。这两个地址写错过一次就是
         # 「第一条命令 404」—— 而作者本机测试永远用的是本地文件,发现不了。
