@@ -2,7 +2,7 @@
 # hs 安装器。用法:
 #   curl -fsSL https://raw.githubusercontent.com/superlcr/huasheng-cli/main/install.sh | sh
 #
-# 覆盖点(内网镜像 / 测试用):
+# 覆盖点(自建镜像 / 测试用):
 #   HS_BASE_URL     下载地址前缀,默认 GitHub 最新 release
 #   HS_INSTALL_DIR  安装目录,默认 ~/.local/bin
 #

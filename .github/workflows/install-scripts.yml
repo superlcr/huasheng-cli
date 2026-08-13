@@ -1,0 +1,77 @@
+# 安装脚本的守卫。
+#
+# 这个仓库里只有两个安装脚本和两份 README —— 而**安装脚本是新用户碰到的第一样东西**,
+# 它坏了的表现是「照着 README 敲一条命令,报一串看不懂的错」,然后人就走了。
+#
+# ★ Windows 那条线**在作者的机器上一次都没验过**(mac 上没有 pwsh)。
+#   GitHub 的 runner 自带 Windows 和 PowerShell,所以这里是唯一能真的
+#   把 install.ps1 解析一遍的地方 —— 比让作者在本机装 PowerShell 干净得多。
+name: install scripts
+
+on:
+  push:
+    paths: ["install.sh", "install.ps1", ".github/workflows/install-scripts.yml"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  sh:
+    name: install.sh (bash + shellcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 语法解析
+        run: bash -n install.sh
+      - name: shellcheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          # SC2016:脚本里有意用单引号包住 $ 变量做提示文案,不是漏了展开
+          shellcheck -e SC2016 install.sh
+      - name: 必须是 POSIX sh 能跑的
+        # README 让用户 `curl … | sh`,而很多系统上 /bin/sh 不是 bash。
+        # 用 dash 再解析一遍,bashism 会当场现形。
+        run: |
+          sudo apt-get install -y -qq dash
+          dash -n install.sh
+
+  ps1:
+    name: install.ps1 (PowerShell 解析)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 语法解析(真解析器,不是正则)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path './install.ps1'), [ref]$null, [ref]$errors)
+          if ($errors -and $errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Host "✖ $($_.Extent.StartLineNumber): $($_.Message)" }
+            exit 1
+          }
+          Write-Host "✓ install.ps1 语法通过"
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -ErrorAction Stop
+          $r = Invoke-ScriptAnalyzer -Path ./install.ps1 -Severity Error,Warning
+          if ($r) { $r | Format-Table -AutoSize | Out-String | Write-Host; exit 1 }
+          Write-Host "✓ 没有 Error/Warning 级问题"
+
+  links:
+    name: README 里的下载地址不能是死链
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 两个安装脚本的 raw 地址真的能下到
+        # README 让用户 `curl -fsSL <raw 地址> | sh`。这两个地址写错过一次就是
+        # 「第一条命令 404」—— 而作者本机测试永远用的是本地文件,发现不了。
+        run: |
+          set -e
+          for f in install.sh install.ps1; do
+            url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/$f"
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+            echo "$f → $code"
+            [ "$code" = 200 ] || { echo "✖ $url 不是 200"; exit 1; }
+          done
