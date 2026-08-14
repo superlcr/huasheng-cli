@@ -148,10 +148,12 @@ Every command's output includes `next_actions`, telling you what you can do next
 | `hs voice` | Available voices (pick before creating a project) |
 | `hs pref` | Creative preferences (tied to **you**, not to a project) |
 | `hs material` | Material library: register public assets, manage folders |
+| `hs mg` | Motion-graphic segments: show / hide (content changes go through `hs chat`) |
 | `hs snapshot` | Checkpoints: undo, redo, jump to before a given instruction |
 | `hs export` | Export the finished video locally |
 | `hs publish` | Publish to Bilibili (**the only command that goes public**) |
 | `hs fast` | Fast lane, when the queue is not moving |
+| `hs mcp` | Run as an MCP server, for AI clients |
 | `hs upgrade` | Upgrade to the latest version |
 
 Run `hs --help` for an overview, `hs help <command>` for full flags.
@@ -164,7 +166,7 @@ Add `--json` to any command for a structured object. All fields are `snake_case`
 
 ```console
 $ hs project show --json
-{"pid": 207385096749080, "state": "READY", ...}
+{"pid": 123456789012345, "state": "READY", ...}
 ```
 
 **On failure**, a uniform error envelope:
@@ -187,6 +189,11 @@ $ hs project show --json
 **Exit codes:** `0` success · `1` command failed (details in the `error` object on stdout) ·
 `2` usage error.
 
+> ⚠ **`hs make` has its own exit codes**, not the three above:
+> `0` finished · `3` stopped at the quote (no `--yes`) · `4` failed · `5` hit a safety cap ·
+> `6` out of credits. When running in bulk, `3` and `6` are not breakage — they mean
+> "waiting for a human" and "waiting for a top-up". See `hs help make`.
+
 ### Three conventions worth internalizing
 
 > **The right response to `CONFIRM_REQUIRED` is to ask the human** — not to retry with
@@ -199,6 +206,31 @@ $ hs project show --json
 
 See `hs help json` for the full contract.
 
+### Plugging into an AI client (MCP)
+
+`hs` ships an MCP server. Clients like Claude Desktop and Claude Code can launch it directly:
+
+```json
+{"mcpServers": {"huasheng": {"command": "hs", "args": ["mcp", "serve"]}}}
+```
+
+Credentials are **shared with the CLI** (`~/.hs/credentials.json`) — sign in once in your
+terminal and the AI side just works. If you have not, the server still starts and walks you
+through signing in.
+
+MCP covers the **main line** (create → wait → answer → confirm → edit clips → export → publish),
+not everything `hs` can do: adding/removing/splitting clips, the material library, creative
+preferences and snapshots stay on the command line — they either need you to look at the picture
+or are simply a person's job. Only `pid` crosses the boundary; internal ids and `clip_id` never
+appear in tool inputs or outputs.
+
+> 🔴 **Exactly two tools spend money or cannot be undone**: confirming the storyboard (charges
+> credits) and publishing (goes public). Both are marked `destructiveHint`, so clients prompt for
+> confirmation, and the cost is stated in the tool title. Every other write is checkpointed
+> server-side and can be rolled back.
+
+See `hs help mcp`.
+
 ### ⚠ Three kinds of id — don't mix them up
 
 | id | Length | Notes |
@@ -209,6 +241,50 @@ See `hs help json` for the full contract.
 
 **The most common trap: in `hs project ls --json`, `id` is the internal id — `pid` is the
 15-digit one.** Always read the `pid` field in scripts. See `hs help ids`.
+
+## Credentials and privacy
+
+`hs` acts on your Bilibili account, so here is exactly what that involves.
+
+**How signing in works**: `hs auth login` opens your browser to Bilibili's authorization
+page, where you sign in with a password, an SMS code or a QR scan and click "Authorize".
+**`hs` never sees your password**, and any anti-fraud captcha is handled by the web page.
+After you approve, the browser redirects back to a `127.0.0.1` callback port on your machine.
+
+**Where things are stored**:
+
+| File | Contents | Notes |
+| :--- | :--- | :--- |
+| `~/.hs/credentials.json` | Your credentials (plaintext, mode `0600`) | Valid 180 days; `hs auth logout` deletes it |
+| `~/.hs/state.json` | The pid from `hs use`, resume args for `hs make` | No credentials; `logout` does **not** clear it |
+
+`HS_CREDENTIALS_FILE` / `HS_STATE_FILE` relocate them (useful in CI or containers where
+`$HOME` is not writable).
+
+**What it connects to**: only Huasheng's service and Bilibili's sign-in / upload endpoints —
+whatever the command you typed requires. **No separate telemetry channel, no background update
+checks.** It does not reach the network unless you ran a command.
+
+**What we can see**: the `User-Agent` on those requests carries four things — the version,
+whether you are on the CLI or MCP, the platform, and **the command name itself**
+(e.g. `project create`, `huasheng_create_video`):
+
+```
+hs/0.1.0 (cli; darwin-arm64; project create)
+```
+
+This is our only way of knowing which versions are still in use and worth maintaining. It rides
+on requests that were going out anyway — nothing extra is sent. **Your content never appears in
+it**: scripts, project titles, pids and filenames are all excluded, and the command name goes
+through an allow-list that yields an empty string when it does not recognise the input.
+
+**⚠ `logout` does not invalidate credentials that already leaked.** It ends this session;
+a copy taken earlier still works. If your credentials leak, sign out of all devices and
+change your password from Bilibili's account security page.
+
+**⚠ Your scripts and assets are uploaded to Huasheng** to generate the video — the same as
+creating on the Huasheng website. `hs publish --submit` is the **only** command that makes
+anything public, and it requires an explicit `--yes`.
 
 ## Upgrading
 
