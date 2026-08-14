@@ -63,6 +63,63 @@ shasum -a 256 -c SHA256SUMS
 > The Windows package is unsigned; SmartScreen may prompt on first run — choose
 > "More info → Run anyway".
 
+## Using it in an AI client
+
+Once `hs` is installed, point your AI client at it. **Find yours below and follow it.**
+
+### Claude Desktop — the only one that shows Huasheng's interface
+
+The timeline, per-clip preview and the grid of alternative footage only render in Claude Desktop.
+
+1. Download **[huasheng.mcpb](https://github.com/superlcr/huasheng-cli/releases/latest/download/huasheng.mcpb)**
+2. **Double-click** it. Claude Desktop opens an install dialog — click Install
+3. It asks where `hs` lives. The default `~/.local/bin/hs` is already filled in, so just confirm
+
+> **Why it still asks for a path**: Claude Desktop does not read your shell PATH.
+> If you installed somewhere else, run `which hs` (`where hs` on Windows) and paste that.
+> The bundle is unsigned, so the first install shows a warning — continue past it.
+
+### Claude Code
+
+```bash
+claude plugin marketplace add superlcr/huasheng-cli
+claude plugin install huasheng@huasheng
+```
+
+### Codex
+
+```bash
+codex plugin marketplace add superlcr/huasheng-cli
+codex plugin add huasheng@huasheng
+```
+
+> Neither terminal client **can render the visual cards** — they do not have that capability;
+> it is not a configuration problem. You get text answers, with thumbnails of the candidate
+> footage when picking a shot. Enough to work with, just without the interface.
+
+### Any other client
+
+Anything that speaks MCP works with this snippet:
+
+```json
+{"mcpServers": {"huasheng": {"command": "hs", "args": ["mcp", "serve"]}}}
+```
+
+### Checking it worked
+
+Open a new conversation and ask:
+
+> How many credits do I have left in Huasheng?
+
+The first time, it opens your browser for a one-time approval. The session is **shared with the
+command line**, so if you have run `hs login` in a terminal you are already done. After that,
+just say what you want:
+
+> Make me a 30-second video about why the sky is blue
+
+> 🔴 **Only two actions ask for confirmation**: approving the storyboard (spends credits, not
+> refundable) and publishing (goes public). Everything else is checkpointed and can be undone.
+
 ## Quick start
 
 ```bash
@@ -208,11 +265,7 @@ See `hs help json` for the full contract.
 
 ### Plugging into an AI client (MCP)
 
-`hs` ships an MCP server. Clients like Claude Desktop and Claude Code can launch it directly:
-
-```json
-{"mcpServers": {"huasheng": {"command": "hs", "args": ["mcp", "serve"]}}}
-```
+**For setup, see [Using it in an AI client](#using-it-in-an-ai-client) above.** This section is about where the boundary sits.
 
 Credentials are **shared with the CLI** (`~/.hs/credentials.json`) — sign in once in your
 terminal and the AI side just works. If you have not, the server still starts and walks you
@@ -221,8 +274,8 @@ through signing in.
 MCP covers the **main line** (create → wait → answer → confirm → edit clips → export → publish),
 not everything `hs` can do: adding/removing/splitting clips, the material library, creative
 preferences and snapshots stay on the command line — they either need you to look at the picture
-or are simply a person's job. Only `pid` crosses the boundary; internal ids and `clip_id` never
-appear in tool inputs or outputs.
+or are simply a person's job. Tool inputs and outputs carry only `pid` and clip indexes; no other
+id ever appears.
 
 > 🔴 **Exactly two tools spend money or cannot be undone**: confirming the storyboard (charges
 > credits) and publishing (goes public). Both are marked `destructiveHint`, so clients prompt for
@@ -231,16 +284,16 @@ appear in tool inputs or outputs.
 
 See `hs help mcp`.
 
-### ⚠ Three kinds of id — don't mix them up
+### How to point at a project or a clip
 
-| id | Length | Notes |
-| :--- | :--- | :--- |
-| `pid` | 15 digits | Used by almost every command; `hs` accepts **only** `pid` externally |
-| internal id | 7 digits | Needed by some endpoints; `hs` converts for you |
-| `clip_id` | 9 digits | Clip level; `hs clip --clip` accepts both an index and a `clip_id` |
+Projects are always addressed by **`pid`** (15 digits, the one `hs project ls` shows) — the same
+number in every command's `--pid` and in every `--json` `pid` field.
 
-**The most common trap: in `hs project ls --json`, `id` is the internal id — `pid` is the
-15-digit one.** Always read the `pid` field in scripts. See `hs help ids`.
+Clips can be addressed two ways, and `hs clip --clip` takes either: by **index** (1, 2, 3…, easy to
+read but it shifts when clips are added, removed, split or merged) or by **`clip_id`** (9 digits,
+stable, found at `clips[].clip_id` in `hs clip ls --json`). Scripts should use the latter.
+
+See `hs help ids`.
 
 ## Credentials and privacy
 

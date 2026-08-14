@@ -60,6 +60,61 @@ shasum -a 256 -c SHA256SUMS
 > 两个 macOS 包均经 Apple 签名与公证(Developer ID Application)。
 > Windows 包未签名,首次运行可能出现 SmartScreen 提示,选择「更多信息 → 仍要运行」。
 
+## 在 AI 客户端里用
+
+装好 `hs` 之后,让 AI 客户端认识它。**找到你用的那一个,照着做就行。**
+
+### Claude Desktop —— 只有它显示得出花生的界面
+
+时间轴、逐条预览、换画面的缩略图网格,只有 Claude Desktop 能显示。
+
+1. 下载 **[huasheng.mcpb](https://github.com/superlcr/huasheng-cli/releases/latest/download/huasheng.mcpb)**
+2. **双击**它,Claude Desktop 会弹出安装窗口,点「安装」
+3. 它会问 `hs` 装在哪 —— 默认已经填好 `~/.local/bin/hs`,直接确认即可
+
+> **为什么还要填一次路径**:Claude Desktop 不读终端的 PATH。
+> 改过安装位置的话,终端里跑 `which hs`(Windows 用 `where hs`)看到的就是要填的。
+> 首次安装会提示这个包未签名,选择继续即可。
+
+### Claude Code
+
+```bash
+claude plugin marketplace add superlcr/huasheng-cli
+claude plugin install huasheng@huasheng
+```
+
+### Codex
+
+```bash
+codex plugin marketplace add superlcr/huasheng-cli
+codex plugin add huasheng@huasheng
+```
+
+> 两个终端客户端**显示不了可视化卡片**(它们没有这个能力,不是配置问题)。
+> 你会拿到文字回答,挑素材时附带候选画面的缩略图 —— 够用,只是没有界面。
+
+### 其它客户端
+
+任何支持 MCP 的客户端,手工加这一段:
+
+```json
+{"mcpServers": {"huasheng": {"command": "hs", "args": ["mcp", "serve"]}}}
+```
+
+### 装好了怎么确认
+
+新开一个对话,问一句:
+
+> 花生里我还有多少花生米?
+
+第一次会让你在浏览器里点一下授权,**只需一次** —— 而且和命令行共用同一份登录态,
+你在终端 `hs login` 过的话这步都省了。之后直接说人话就行:
+
+> 用花生做一条 30 秒的视频,讲讲为什么天是蓝的
+
+> 🔴 **只有两个动作会弹确认框**:确认分镜方案(扣花生米,不退)和投稿(发公网)。
+> 其余改动服务端都存了档,退得回来。
+
 ## 快速开始
 
 ```bash
@@ -201,18 +256,14 @@ $ hs project show --json
 
 ### 接进 AI 客户端(MCP)
 
-`hs` 自带一个 MCP server,Claude Desktop / Claude Code 这类客户端可以直接把它拉起来:
-
-```json
-{"mcpServers": {"huasheng": {"command": "hs", "args": ["mcp", "serve"]}}}
-```
+**怎么装见上面「[在 AI 客户端里用](#在-ai-客户端里用)」**,这里只说能力边界。
 
 凭据与命令行**共用同一份** `~/.hs/credentials.json` —— 你在终端登录过,AI 那边就能直接用;
 没登录的话它会引导你登录,server 本身照常起得来。
 
 MCP 覆盖的是**主干**(建项目 → 等 → 回答 → 确认 → 改分镜 → 导出 → 投稿),不是 `hs` 的全部
 能力:分镜增删拆合、素材库、创作偏好、快照只在命令行里有 —— 它们要么要看着画面判断,
-要么本来就是人的活。对外只认 `pid`,内部 id 与 `clip_id` 不会出现在工具的出入参里。
+要么本来就是人的活。工具的出入参里只有 `pid` 和分镜序号,别的 id 一概不出现。
 
 > 🔴 **只有两个工具会花钱或不可撤销**:确认分镜方案(扣花生米)、投稿(发公网)。
 > 它们标了 `destructiveHint`,客户端会为它们弹确认框,代价写在工具标题上。
@@ -220,16 +271,15 @@ MCP 覆盖的是**主干**(建项目 → 等 → 回答 → 确认 → 改分镜
 
 详见 `hs help mcp`。
 
-### ⚠ 三种 id 不要混用
+### 怎么指一个项目 / 一条分镜
 
-| id | 长度 | 说明 |
-| :--- | :--- | :--- |
-| `pid` | 15 位 | 绝大多数命令用它,`hs` 对外**只认 pid** |
-| 内部 id | 7 位 | 部分接口内部需要,`hs` 自动换算,你不用管 |
-| `clip_id` | 9 位 | 分镜级;`hs clip --clip` 同时接受序号和 `clip_id` |
+项目一律用 **`pid`**(15 位,`hs project ls` 里那个)—— 所有命令的 `--pid`、所有 `--json` 里的
+`pid` 字段都是同一个数。
 
-**最容易踩的一个坑:`hs project ls --json` 里的 `id` 是内部 id,`pid` 才是 15 位那个。**
-脚本里请一律取 `pid` 字段。详见 `hs help ids`。
+分镜有两种指法,`hs clip --clip` 两种都收:**序号**(1、2、3…,人看着方便,但会随增删拆合变动)
+和 **`clip_id`**(9 位,稳定不变,在 `hs clip ls --json` 的 `clips[].clip_id`)。脚本里请用后者。
+
+详见 `hs help ids`。
 
 ## 凭据与隐私
 

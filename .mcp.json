@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "huasheng": {
+      "command": "hs",
+      "args": ["mcp", "serve"]
+    }
+  }
+}
