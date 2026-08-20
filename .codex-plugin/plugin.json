@@ -1,11 +1,25 @@
 {
   "name": "huasheng",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Make videos with Huasheng from your assistant: write a script, approve the storyboard, swap footage on a clip, and export or publish. Requires the hs CLI (curl -fsSL https://raw.githubusercontent.com/superlcr/huasheng-cli/main/install.sh | sh) and a one-time browser sign-in.",
   "author": {
     "name": "Huasheng"
   },
   "homepage": "https://www.huasheng.cn",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Huasheng",
+    "shortDescription": "Create and edit Huasheng videos with interactive cards",
+    "longDescription": "Turn a script into a video, inspect the timeline, edit narration, swap footage, and export from Codex Desktop.",
+    "developerName": "Huasheng",
+    "category": "Productivity",
+    "websiteURL": "https://www.huasheng.cn",
+    "brandColor": "#FB7299",
+    "defaultPrompt": [
+      "Show my latest Huasheng project.",
+      "Create a Huasheng video from my script."
+    ]
+  },
   "keywords": [
     "video",
     "huasheng",
