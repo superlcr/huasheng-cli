@@ -64,9 +64,23 @@ shasum -a 256 -c SHA256SUMS
 
 装好 `hs` 之后,让 AI 客户端认识它。**找到你用的那一个,照着做就行。**
 
-### Claude Desktop —— 只有它显示得出花生的界面
+### ChatGPT Desktop App
 
-时间轴、逐条预览、换画面的缩略图网格,只有 Claude Desktop 能显示。
+ChatGPT 桌面客户端可以直接运行本机的 `hs` MCP server,并显示时间轴、逐条预览和
+换画面的缩略图网格。
+
+1. 打开 **Settings → MCP servers → Add server**
+2. 名称填 `huasheng`,类型选 **STDIO**
+3. Command 填 `hs` 的完整路径:macOS / Linux 在终端运行 `which hs`,Windows 运行 `where hs`
+4. Arguments 依次填 `mcp`、`serve`,保存后点 **Restart**
+5. 新开对话,输入 `/mcp`,确认 `huasheng` 已连接
+
+> ChatGPT Desktop App 与 Codex CLI 共用 `~/.codex/config.toml`。在这里加过一次,
+> Codex CLI 不用再配。详见 [OpenAI MCP 文档](https://developers.openai.com/codex/mcp)。
+
+### Claude Desktop App
+
+Claude Desktop 同样能显示花生的可视化交互卡。
 
 1. 下载 **[huasheng.mcpb](https://github.com/superlcr/huasheng-cli/releases/latest/download/huasheng.mcpb)**
 2. **双击**它,Claude Desktop 会弹出安装窗口,点「安装」
@@ -76,22 +90,25 @@ shasum -a 256 -c SHA256SUMS
 > 改过安装位置的话,终端里跑 `which hs`(Windows 用 `where hs`)看到的就是要填的。
 > 首次安装会提示这个包未签名,选择继续即可。
 
-### Claude Code
+### Codex CLI
 
 ```bash
-claude plugin marketplace add superlcr/huasheng-cli
-claude plugin install huasheng@huasheng
+codex mcp add huasheng -- hs mcp serve
+codex mcp list
 ```
 
-### Codex
+如果已经在 ChatGPT Desktop App 里添加过 `huasheng`,这里无需重复添加;进入 Codex 后用
+`/mcp` 查看连接状态。
+
+### Claude Code CLI
 
 ```bash
-codex plugin marketplace add superlcr/huasheng-cli
-codex plugin add huasheng@huasheng
+claude mcp add --scope user huasheng -- hs mcp serve
+claude mcp list
 ```
 
-> 两个终端客户端**显示不了可视化卡片**(它们没有这个能力,不是配置问题)。
-> 你会拿到文字回答,挑素材时附带候选画面的缩略图 —— 够用,只是没有界面。
+> Codex CLI 与 Claude Code CLI **不显示 Desktop 的可视化交互卡**,但会收到同一工具的
+> 完整文字和结构化结果,所有主流程照样可用。
 
 ### 其它客户端
 

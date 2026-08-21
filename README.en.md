@@ -67,9 +67,23 @@ shasum -a 256 -c SHA256SUMS
 
 Once `hs` is installed, point your AI client at it. **Find yours below and follow it.**
 
-### Claude Desktop — the only one that shows Huasheng's interface
+### ChatGPT Desktop App
 
-The timeline, per-clip preview and the grid of alternative footage only render in Claude Desktop.
+The ChatGPT desktop app can run the local `hs` MCP server directly and render the timeline,
+per-clip previews, and the alternative-footage grid.
+
+1. Open **Settings → MCP servers → Add server**
+2. Enter `huasheng` as the name and choose **STDIO**
+3. For Command, paste the full path printed by `which hs` on macOS/Linux or `where hs` on Windows
+4. Add `mcp` and `serve` as the two arguments, save, then select **Restart**
+5. Open a new conversation and type `/mcp` to confirm that `huasheng` is connected
+
+> The ChatGPT Desktop App and Codex CLI share `~/.codex/config.toml`. Configure it here once
+> and Codex CLI is ready too. See the [OpenAI MCP documentation](https://developers.openai.com/codex/mcp).
+
+### Claude Desktop App
+
+Claude Desktop can render the same Huasheng interactive cards.
 
 1. Download **[huasheng.mcpb](https://github.com/superlcr/huasheng-cli/releases/latest/download/huasheng.mcpb)**
 2. **Double-click** it. Claude Desktop opens an install dialog — click Install
@@ -79,23 +93,25 @@ The timeline, per-clip preview and the grid of alternative footage only render i
 > If you installed somewhere else, run `which hs` (`where hs` on Windows) and paste that.
 > The bundle is unsigned, so the first install shows a warning — continue past it.
 
-### Claude Code
+### Codex CLI
 
 ```bash
-claude plugin marketplace add superlcr/huasheng-cli
-claude plugin install huasheng@huasheng
+codex mcp add huasheng -- hs mcp serve
+codex mcp list
 ```
 
-### Codex
+If you already added `huasheng` in the ChatGPT Desktop App, do not add it again. Use `/mcp`
+inside Codex to check the connection.
+
+### Claude Code CLI
 
 ```bash
-codex plugin marketplace add superlcr/huasheng-cli
-codex plugin add huasheng@huasheng
+claude mcp add --scope user huasheng -- hs mcp serve
+claude mcp list
 ```
 
-> Neither terminal client **can render the visual cards** — they do not have that capability;
-> it is not a configuration problem. You get text answers, with thumbnails of the candidate
-> footage when picking a shot. Enough to work with, just without the interface.
+> Codex CLI and Claude Code CLI do not render the Desktop interactive cards, but they receive
+> the same tools' complete text and structured results, so the full core workflow still works.
 
 ### Any other client
 
