@@ -1,37 +1,34 @@
-# 登录、隐私与系统要求
+# Sign-in, privacy, and system requirements
 
-本页说明 `hs` 如何登录、在本地保存什么以及会连接哪些服务。安装与使用入口见
-[主 README](../README.md)。
+[简体中文](security.zh.md) · **English**
 
-## 登录与本地文件
+For installation and usage paths, see the [main README](../README.md).
 
-`hs auth login` 会打开 B 站授权页。密码、短信和风控验证码都只在网页中处理,`hs` 不接触密码。
-授权完成后浏览器回到本机 `127.0.0.1` 回调端口。
+## Sign-in and local files
 
-| 文件 | 内容 | 说明 |
+`hs auth login` opens Bilibili's authorization page. Passwords, SMS codes, and risk checks stay in
+the browser; `hs` never receives your password.
+
+| File | Contents | Notes |
 | :--- | :--- | :--- |
-| `~/.hs/credentials.json` | 登录凭据(权限 `0600`) | CLI 与所有 MCP 客户端共用;`hs auth logout` 会删除 |
-| `~/.hs/state.json` | 当前 pid、`hs make` 续跑参数 | 不含凭据;退出登录不会删除 |
+| `~/.hs/credentials.json` | Sign-in credentials (mode `0600`) | Shared by CLI and MCP clients; removed by `hs auth logout` |
+| `~/.hs/state.json` | Current pid and resume state | Contains no credentials |
 
-CI 或容器中可以用 `HS_CREDENTIALS_FILE` / `HS_STATE_FILE` 更改位置。
+Use `HS_CREDENTIALS_FILE` and `HS_STATE_FILE` to change these paths in CI or containers.
 
-## 网络与可观测信息
+## Network and observable metadata
 
-`hs` 只连接完成操作所需的花生服务和 B 站登录 / 投稿接口,没有独立遥测通道,也不做后台
-自动更新检查。正常请求的 `User-Agent` 会包含版本、CLI 或 MCP、平台和命令名,例如:
+`hs` connects only to Huasheng and the Bilibili sign-in/publishing endpoints required for your
+request. It has no separate telemetry channel and does not check for updates in the background.
+Normal requests include version, CLI/MCP mode, platform, and command name in `User-Agent`; they do
+not include scripts, titles, pids, filenames, or footage contents.
 
-```text
-hs/0.2.0 (cli; darwin-arm64; project create)
-```
+Scripts and footage are uploaded to Huasheng to make the video. Only
+`hs publish --submit --yes` publishes content publicly.
 
-其中不包含文稿、标题、pid、文件名或素材内容。文稿和素材会上传到花生用于生成视频;
-只有 `hs publish --submit --yes` 会把内容发布到公网。
+## Requirements
 
-`hs auth logout` 只删除本机凭据。凭据若已泄漏,请到 B 站账号安全页退出全部设备或修改密码。
-
-## 系统要求
-
-- macOS 11 及以上(Apple Silicon / Intel)
-- Linux glibc 2.31 及以上
-- Windows 10 及以上,x64;Windows on ARM 通过 x64 模拟层运行
+- macOS 11 or later (Apple Silicon or Intel)
+- Linux with glibc 2.31 or later
+- Windows 10 or later, x64; Windows on ARM uses x64 emulation
 

@@ -1,20 +1,20 @@
-# 脚本与自动化
+# Scripting and automation
 
-本页说明如何稳定地从脚本、CI 或批量任务调用 `hs`。人工操作与 AI 客户端接入见
-[主 README](../README.md)。
+[简体中文](automation.zh.md) · **English**
 
-## JSON 输出
+This page covers stable use from scripts, CI, and batch jobs. For interactive use, see the
+[main README](../README.md).
 
-每条命令加 `--json` 即输出结构化对象,字段一律为 `snake_case`。
+## JSON output
 
-成功时 stdout 直接是数据:
+Add `--json` to any command. Field names use `snake_case`.
 
 ```console
 $ hs project show --json
 {"pid": 123456789012345, "state": "READY", ...}
 ```
 
-失败时 stdout 是统一错误信封:
+Failures use one envelope:
 
 ```json
 {
@@ -28,23 +28,19 @@ $ hs project show --json
 }
 ```
 
-- `suggested_action` ∈ `login` · `topup` · `retry` · `confirm` · `null`
-- `next_command` 只在确实有一条可照抄命令时出现
-- 普通命令退出码:`0` 成功 · `1` 命令失败 · `2` 用法错误
-- `hs make` 退出码:`0` 成片 · `3` 等确认 · `4` 失败 · `5` 达到兜底上限 · `6` 花生米不足
+- Normal exit codes: `0` success, `1` command failure, `2` usage error
+- `hs make`: `0` finished, `3` waiting for approval, `4` failed, `5` safety limit, `6` insufficient credits
 
-## 三条控制流约定
+## Control-flow rules
 
-1. `CONFIRM_REQUIRED` 应停下来问人,不能自动加 `--yes`。
-2. 分镜写操作返回 `applied: false` 表示仍在后台执行,不是失败。
-3. `hs wait` 返回 `timed_out: true` 表示本轮等待结束,再次调用即可。
+1. Stop and ask a person on `CONFIRM_REQUIRED`; never add `--yes` automatically.
+2. `applied: false` means a clip operation is still running, not that it failed.
+3. `timed_out: true` from `hs wait` means call it again.
 
-完整字段与批量约定见 `hs help json`、`hs help errors`、`hs help batch`。
+See `hs help json`, `hs help errors`, and `hs help batch` for the complete contract.
 
-## 项目与分镜 ID
+## IDs
 
-项目统一使用 15 位 `pid`。分镜可以用从 1 开始的序号,也可以用稳定的 9 位 `clip_id`。
-增删或拆合分镜后序号会变化,自动化脚本应优先使用 `clip_id`。
-
-详见 `hs help ids`。
+Projects use a 15-digit `pid`. Clips accept a human-friendly position or a stable 9-digit `clip_id`.
+Positions change when clips are added, removed, split, or merged; automation should prefer `clip_id`.
 
