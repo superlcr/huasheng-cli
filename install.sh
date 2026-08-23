@@ -6,8 +6,8 @@
 #   HS_BASE_URL     where to download from, default the latest GitHub release
 #   HS_INSTALL_DIR  where to install, default ~/.local/bin
 #
-# ★ sh, not bash: some minimal Linux images have no bash, and this is the very
-#   first thing anyone runs. Being fussy here just turns people away.
+# sh, not bash: some minimal Linux images have no bash, and this is the very first
+# thing anyone runs. Being fussy here just turns people away.
 set -eu
 
 REPO="${HS_REPO:-superlcr/huasheng-cli}"
@@ -16,7 +16,7 @@ INSTALL_DIR="${HS_INSTALL_DIR:-$HOME/.local/bin}"
 
 die() { echo "Error: $*" >&2; exit 1; }
 
-# ---- 1. 认平台 ----
+# ---- 1. Identify the platform ----
 OS="$(uname -s)"; ARCH="$(uname -m)"
 case "$OS-$ARCH" in
   Darwin-arm64)  PLATFORM="darwin-arm64" ;;
@@ -26,16 +26,17 @@ case "$OS-$ARCH" in
 esac
 ASSET="hs-$PLATFORM.tar.gz"
 
-# ---- 2. 下载 ----
+# ---- 2. Download ----
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 echo "Downloading $ASSET ..."
 curl -fsSL "$BASE_URL/$ASSET"      -o "$TMP/$ASSET"   || die "Download failed: $BASE_URL/$ASSET"
 curl -fsSL "$BASE_URL/SHA256SUMS"  -o "$TMP/SHA256SUMS" || die "Could not download the checksum file"
 
-# ---- 3. 校验(失败必须中止)----
-# ★ 不用 `shasum -c`:mac 是 shasum、Linux 多是 sha256sum,名字不统一;
-#   而且 -c 对「文件不在清单里」的处理各家不同。自己比对最踏实。
+# ---- 3. Verify (a failure must stop the install) ----
+# Not `shasum -c`: the tool is called shasum on macOS and usually sha256sum on Linux, and
+# the two disagree about what -c does when a file is missing from the list. Comparing the
+# digests ourselves is the one thing that behaves the same everywhere.
 if command -v shasum >/dev/null 2>&1; then
   ACTUAL="$(shasum -a 256 "$TMP/$ASSET" | cut -d' ' -f1)"
 elif command -v sha256sum >/dev/null 2>&1; then
@@ -43,9 +44,10 @@ elif command -v sha256sum >/dev/null 2>&1; then
 else
   die "Neither shasum nor sha256sum is available, so the download cannot be verified. Stopping."
 fi
-# ★ 哈希工具静默失败(权限/损坏文件之类)时 ACTUAL 会是空字符串,不加这条
-#   guard 会走进下面「校验不通过」分支,打印「期望 X / 实际 (空)」——看着
-#   像被人动过手脚,其实只是本地算不出哈希。
+# If the hashing tool fails quietly (a permissions problem, a truncated file), ACTUAL ends
+# up empty. Without this guard we would fall into the mismatch branch below and print
+# "expected X / actual (nothing)" — which reads like the download was tampered with, when
+# in fact the digest simply could not be computed locally.
 [ -n "$ACTUAL" ] || die "The checksum tool produced no output, so the download cannot be verified. Stopping."
 EXPECTED="$(grep " $ASSET\$" "$TMP/SHA256SUMS" | cut -d' ' -f1)"
 [ -n "$EXPECTED" ] || die "$ASSET is not listed in SHA256SUMS"
@@ -57,14 +59,16 @@ Usually the download was incomplete, or this is not the official source.
 Stopping. Nothing has been installed."
 fi
 
-# ---- 4. 安装 ----
-# ★ 不直接 `mv "$TMP/hs" "$INSTALL_DIR/hs"`:$TMP 来自
-#   `mktemp -d`,多数 Linux 发行版 /tmp 是 tmpfs,而 $INSTALL_DIR 在 $HOME ——
-#   跨文件系统时 `mv` 会退化成"拷贝再删源文件",不是原子操作。拷贝中途被打断
-#   (Ctrl-C/磁盘满)会在 PATH 上留下一个半截的可执行文件,比装失败更糟,
-#   而且 `hs upgrade` 时目标文件正在被执行,自我覆盖更容易撞上这条路径。
-#   改法:先拷进目标目录里的一个临时名,再在**同一个目录内** rename ——
-#   同目录 rename 在任何文件系统上都是原子的,拷贝失败也不会碰到 `hs` 这个名字。
+# ---- 4. Install ----
+# Not a plain `mv "$TMP/hs" "$INSTALL_DIR/hs"`: $TMP comes from `mktemp -d`, /tmp is tmpfs
+# on most Linux distributions, and $INSTALL_DIR lives under $HOME. Across filesystems `mv`
+# degrades into "copy, then unlink the source", which is not atomic. Interrupt that copy
+# (Ctrl-C, a full disk) and you are left with a half-written executable sitting on the PATH
+# — worse than a failed install. `hs upgrade` makes it likelier still, because the target
+# file is being executed while it is overwritten.
+# So: copy to a temporary name *inside the destination directory*, then rename within that
+# same directory. A same-directory rename is atomic on every filesystem, and a failed copy
+# never touches the name `hs`.
 mkdir -p "$INSTALL_DIR"
 tar -xzf "$TMP/$ASSET" -C "$TMP"
 chmod +x "$TMP/hs"
@@ -75,7 +79,7 @@ mv "$STAGE_FILE" "$INSTALL_DIR/hs"
 echo "Installed: $INSTALL_DIR/hs"
 "$INSTALL_DIR/hs" --version
 
-# ---- 5. PATH 提示 ----
+# ---- 5. PATH hint ----
 case ":$PATH:" in
   *":$INSTALL_DIR:"*) ;;
   *) echo ""

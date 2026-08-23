@@ -3,10 +3,11 @@
 #
 # Overrides (same names and meanings as install.sh): HS_BASE_URL / HS_INSTALL_DIR
 $ErrorActionPreference = "Stop"
-# ★ Windows PowerShell 5.1(默认引擎,irm | iex 的绝大多数用户)
-#   下,Invoke-WebRequest 默认每个数据块都重绘一次进度条,实测比关掉慢一个数量级——
-#   37MB 的包会让人对着一个不动的进度条等上几分钟,像卡死。rustup/deno/bun 的官方
-#   安装器都这么关。
+# On Windows PowerShell 5.1 — the default engine, and what almost everyone piping
+# `irm | iex` is running — Invoke-WebRequest redraws its progress bar for every chunk
+# of data, which measures an order of magnitude slower than turning it off. A 37 MB
+# download would leave you staring at a frozen-looking bar for minutes. The official
+# rustup, deno and bun installers all disable it for the same reason.
 $ProgressPreference = "SilentlyContinue"
 
 $Repo    = if ($env:HS_REPO) { $env:HS_REPO } else { "superlcr/huasheng-cli" }
@@ -17,10 +18,10 @@ if ([System.Environment]::Is64BitOperatingSystem -eq $false) {
   throw "hs is only available as a 64-bit build"
 }
 
-# ARM64 设备(如 Surface Pro X)没有专门的 hs 版本,但 Windows 11 on ARM
-# 能通过内置的 x64 模拟层运行 x64 程序,所以不拒绝安装,只告知用户实情。
-# PROCESSOR_ARCHITECTURE 在 32 位宿主进程下会读成 x86,真实架构要看
-# PROCESSOR_ARCHITEW6432(64 位系统上,32 位进程才会有这个变量)。
+# There is no native ARM64 build of hs, but Windows 11 on ARM runs x64 programs through
+# its built-in emulation layer — so do not refuse the install, just say what is happening.
+# PROCESSOR_ARCHITECTURE reads as x86 inside a 32-bit host process; the real architecture
+# is in PROCESSOR_ARCHITEW6432, which only exists for a 32-bit process on a 64-bit system.
 $Arch = $env:PROCESSOR_ARCHITECTURE
 if ($Arch -eq "x86" -and $env:PROCESSOR_ARCHITEW6432) {
   $Arch = $env:PROCESSOR_ARCHITEW6432
@@ -39,7 +40,7 @@ try {
   Invoke-WebRequest -Uri "$BaseUrl/SHA256SUMS" -OutFile "$Tmp\SHA256SUMS"  -UseBasicParsing
   Write-Host "Downloaded. Verifying ..."
 
-  # 校验失败必须中止 —— 与 install.sh 同一条纪律
+  # A failed checksum must stop the install — same rule as install.sh
   $actual   = (Get-FileHash "$Tmp\$Asset" -Algorithm SHA256).Hash.ToLower()
   $line     = Select-String -Path "$Tmp\SHA256SUMS" -Pattern "\s$([regex]::Escape($Asset))$"
   if (-not $line) { throw "$Asset is not listed in SHA256SUMS" }
@@ -53,11 +54,12 @@ try {
   Write-Host "Installed: $Dir\hs.exe"
   & "$Dir\hs.exe" --version
 
-  # 只动用户级 PATH,不碰系统级 —— 不需要管理员权限
-  # ★ 用户级 Path 可能**根本没设过**,那时 GetEnvironmentVariable 返回 $null ——
-  #   直接 "$userPath;$Dir" 会写出一个以 `;` 开头的 Path(头一项是空串)。
-  #   多数情况下无害,但它是我们亲手写进注册表的垃圾,而且只在全新账号上出现,
-  #   平时测不到。
+  # Only the user-level PATH is touched, never the machine-level one, so no administrator
+  # rights are needed.
+  # A user-level Path may never have been set at all, in which case GetEnvironmentVariable
+  # returns $null and "$userPath;$Dir" would write a Path whose first entry is empty. Mostly
+  # harmless, but it is our own litter in someone's registry, and it only shows up on a brand
+  # new account — exactly where nobody tests.
   $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
   if ([string]::IsNullOrEmpty($userPath)) {
     [Environment]::SetEnvironmentVariable("Path", $Dir, "User")
