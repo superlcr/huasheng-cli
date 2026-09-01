@@ -23,7 +23,8 @@ CI 或容器中可以用 `HS_CREDENTIALS_FILE` / `HS_STATE_FILE` 更改位置。
 自动更新检查。正常请求的 `User-Agent` 会包含版本、CLI 或 MCP、平台和命令名,例如:
 
 ```text
-hs/0.2.0 (cli; darwin-arm64; project create)
+hs/<版本号> (cli; darwin-arm64; project create)
+hs/<版本号> (mcp; darwin-arm64; huasheng_create_project)
 ```
 
 其中不包含文稿、标题、pid、文件名或素材内容。文稿和素材会上传到花生用于生成视频;

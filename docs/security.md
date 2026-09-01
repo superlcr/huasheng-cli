@@ -21,7 +21,12 @@ Use `HS_CREDENTIALS_FILE` and `HS_STATE_FILE` to change these paths in CI or con
 `hs` connects only to Huasheng and the Bilibili sign-in/publishing endpoints required for your
 request. It has no separate telemetry channel and does not check for updates in the background.
 Normal requests include version, CLI/MCP mode, platform, and command name in `User-Agent`; they do
-not include scripts, titles, pids, filenames, or footage contents.
+not include scripts, titles, pids, filenames, or footage contents. It looks like this:
+
+```text
+hs/<version> (cli; darwin-arm64; project create)
+hs/<version> (mcp; darwin-arm64; huasheng_create_project)
+```
 
 Scripts and footage are uploaded to Huasheng to make the video. Only
 `hs publish --submit --yes` publishes content publicly.
