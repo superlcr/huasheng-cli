@@ -25,44 +25,34 @@ Every command supports `--json`, designed for scripts and AI clients.
 
 Do this once, regardless of which client you use later.
 
-### macOS / Linux
+### Install
+
+Pick whichever suits you — all three give you the same binary.
+
+**macOS / Linux**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/superlcr/huasheng-cli/main/install.sh | sh
 ```
 
-### Windows
-
-In PowerShell:
+**Windows**, in PowerShell:
 
 ```powershell
 irm https://raw.githubusercontent.com/superlcr/huasheng-cli/main/install.ps1 | iex
 ```
 
-The installer downloads the package for your platform, **verifies its SHA256**, and extracts
+Either installer downloads the package for your platform, **verifies its SHA256**, and extracts
 it to `~/.local/bin` (`%LOCALAPPDATA%\Programs\hs` on Windows).
 
-### With npm
-
-If you already live in the Node ecosystem, or just want to try it without installing anything:
+**With npm**, if you already live in the Node ecosystem or just want to try it first:
 
 ```bash
 npx @superlcr/hs --help
 npm install -g @superlcr/hs    # the command is still `hs`
 ```
 
-The npm package contains a small launcher; the binary for your platform arrives as an optional
-dependency, so nothing is downloaded or compiled at install time. It is the same binary as the
-release above.
-
-After installation, open a new terminal, sign in, and confirm that `hs` can read your credit balance:
-
-```bash
-hs auth login
-hs account
-```
-
-The CLI and every AI client share `~/.hs/credentials.json`; you do not sign in separately.
+The npm package is a small launcher; the binary for your platform arrives as an optional
+dependency, so nothing is downloaded or compiled at install time.
 
 <details>
 <summary>Manual download instead of the installer</summary>
@@ -92,9 +82,23 @@ shasum -a 256 -c SHA256SUMS
 
 </details>
 
-After installing and signing in, choose either path below. Both use the same `hs` binary and sign-in.
+### Sign in
 
-## Option 1: use hs CLI directly
+Open a new terminal, sign in, and confirm that `hs` can read your credit balance:
+
+```bash
+hs auth login
+hs account
+```
+
+The CLI and every AI client share `~/.hs/credentials.json`; you do not sign in separately.
+
+
+## Step 2: choose how you use it
+
+Both paths use the same `hs` binary and the same sign-in — pick either, or both.
+
+### Option 1: use hs CLI directly
 
 Use this path for exact commands, scripts, or batch jobs. `hs make` can start from one sentence or
 a complete script, run the creation workflow, wait for the finished video, and download it.
@@ -121,7 +125,7 @@ hs make --script @script.txt --yes --out ./video.mp4
 confirmation. See the [hs CLI guide](docs/cli.md) for parameters, step-by-step editing, resuming,
 and exporting. See [Scripting and automation](docs/automation.md) for JSON, exit codes, and batches.
 
-## Option 2: use hs through MCP in an AI client
+### Option 2: use hs through MCP in an AI client
 
 `hs` includes an MCP server. Any AI client that supports local STDIO MCP can launch it with:
 
@@ -143,7 +147,7 @@ client cannot find `hs`, replace `command` with the full path from `which hs` (`
 The following are setup examples for four common clients. For any other MCP client, enter the same
 `command` and `args` in its MCP server settings.
 
-### ChatGPT Desktop App
+#### ChatGPT Desktop App
 
 1. Open **Settings → MCP servers → Add server**
 2. Enter `huasheng` and choose **STDIO**
@@ -153,7 +157,7 @@ The following are setup examples for four common clients. For any other MCP clie
 ChatGPT Desktop renders interactive timeline, preview, footage, and export cards. It shares
 `~/.codex/config.toml` with Codex CLI, so this setup also enables hs there.
 
-### Claude Desktop App
+#### Claude Desktop App
 
 1. Download **[huasheng.mcpb](https://github.com/superlcr/huasheng-cli/releases/latest/download/huasheng.mcpb)**
 2. Double-click it, then select Install in Claude Desktop
@@ -163,7 +167,7 @@ If you changed the install location, paste the full path from `which hs` (`where
 Continue if the first install warns that the extension is unsigned. Claude Desktop also renders
 interactive cards.
 
-### Codex CLI
+#### Codex CLI
 
 ```bash
 codex mcp add huasheng -- hs mcp serve
@@ -173,7 +177,7 @@ codex mcp list
 Do not add it again if you already configured `huasheng` in ChatGPT Desktop; both read
 `~/.codex/config.toml`. See the [OpenAI MCP documentation](https://developers.openai.com/codex/mcp).
 
-### Claude Code CLI
+#### Claude Code CLI
 
 ```bash
 claude mcp add --scope user huasheng -- hs mcp serve
@@ -184,7 +188,7 @@ Both commands run in the same terminal where you just signed in, so plain `hs` r
 shell cannot find it, substitute the full path from `which hs` (`where hs` on Windows). Codex CLI
 and Claude Code present complete text results instead of desktop interactive cards.
 
-### Use it through conversation
+#### Use it through conversation
 
 After setup, say in your AI client:
 

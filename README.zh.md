@@ -24,26 +24,26 @@
 
 无论之后使用哪种客户端,这一步都只做一次。
 
-### macOS / Linux
+### 安装
+
+三种方式随便挑,装到的是同一个二进制。
+
+**macOS / Linux**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/superlcr/huasheng-cli/main/install.sh | sh
 ```
 
-### Windows
-
-在 PowerShell 中执行:
+**Windows**,在 PowerShell 中执行:
 
 ```powershell
 irm https://raw.githubusercontent.com/superlcr/huasheng-cli/main/install.ps1 | iex
 ```
 
-安装脚本会下载对应平台的包、**校验 SHA256**、解压到 `~/.local/bin`
+以上两个安装脚本都会下载对应平台的包、**校验 SHA256**、解压到 `~/.local/bin`
 (Windows 为 `%LOCALAPPDATA%\Programs\hs`)。
 
-### 用 npm
-
-本来就在 Node 生态里,或者只想先试试、什么都不装:
+**用 npm**,如果你本来就在 Node 生态里,或者只想先试试:
 
 ```bash
 npx @superlcr/hs --help
@@ -51,16 +51,7 @@ npm install -g @superlcr/hs    # 装完命令仍然叫 hs
 ```
 
 npm 包里只有一个很小的启动器,对应平台的二进制作为可选依赖装进来 ——
-安装时不下载、不编译。和上面 release 里的是同一个二进制。
-
-安装完成后新开一个终端,登录并确认能读到花生米余额:
-
-```bash
-hs auth login
-hs account
-```
-
-CLI 和所有 AI 客户端共用 `~/.hs/credentials.json`,不需要分别登录。
+安装时不下载、不编译。
 
 <details>
 <summary>不使用安装脚本:手动下载</summary>
@@ -88,9 +79,23 @@ shasum -a 256 -c SHA256SUMS
 
 </details>
 
-安装并登录后,有两种用法。两者使用同一个 `hs` 和同一份登录态。
+### 登录
 
-## 用法一:直接使用 hs CLI
+新开一个终端,登录并确认能读到花生米余额:
+
+```bash
+hs auth login
+hs account
+```
+
+CLI 和所有 AI 客户端共用 `~/.hs/credentials.json`,不需要分别登录。
+
+
+## 第二步:选一种用法
+
+两种用法使用同一个 `hs` 和同一份登录态,挑一个,或者都用。
+
+### 用法一:直接使用 hs CLI
 
 适合自己敲命令、写脚本或跑批量任务。`hs make` 可以从一句话或一份文稿开始,
 自动完成创作、等待成片并下载。
@@ -117,7 +122,7 @@ hs make --script @script.txt --yes --out ./video.mp4
 更多参数、分步修改、续跑和导出方法见[hs CLI 使用指南](docs/cli.zh.md),
 JSON、退出码和批量任务见[脚本与自动化](docs/automation.zh.md)。
 
-## 用法二:通过 MCP 在 AI 客户端中使用
+### 用法二:通过 MCP 在 AI 客户端中使用
 
 `hs` 内置 MCP server。任何支持本地 STDIO MCP 的 AI 客户端,都可以通过下面的配置启动它:
 
@@ -139,7 +144,7 @@ JSON、退出码和批量任务见[脚本与自动化](docs/automation.zh.md)。
 下面是四个常见客户端的具体配置方法。使用其他 MCP 客户端时,把上面的同一组
 `command` 和 `args` 填入它的 MCP server 设置即可。
 
-### ChatGPT Desktop App
+#### ChatGPT Desktop App
 
 1. 打开 **Settings → MCP servers → Add server**
 2. 名称填 `huasheng`,类型选 **STDIO**
@@ -149,7 +154,7 @@ JSON、退出码和批量任务见[脚本与自动化](docs/automation.zh.md)。
 ChatGPT Desktop 会显示时间轴、预览、素材选择和导出等交互卡片。它与 Codex CLI
 共用 `~/.codex/config.toml`,所以在这里配置后 Codex CLI 也能直接使用。
 
-### Claude Desktop App
+#### Claude Desktop App
 
 1. 下载 **[huasheng.mcpb](https://github.com/superlcr/huasheng-cli/releases/latest/download/huasheng.mcpb)**
 2. 双击打开,在 Claude Desktop 中点「安装」
@@ -158,7 +163,7 @@ ChatGPT Desktop 会显示时间轴、预览、素材选择和导出等交互卡�
 如果改过安装位置,填入 `which hs`(Windows 用 `where hs`)输出的完整路径。
 首次安装提示扩展未签名时,选择继续。Claude Desktop 同样会显示交互卡片。
 
-### Codex CLI
+#### Codex CLI
 
 ```bash
 codex mcp add huasheng -- hs mcp serve
@@ -168,7 +173,7 @@ codex mcp list
 如果已经在 ChatGPT Desktop 中添加过 `huasheng`,无需重复执行。两者共享
 `~/.codex/config.toml`。[OpenAI MCP 文档](https://developers.openai.com/codex/mcp)
 
-### Claude Code CLI
+#### Claude Code CLI
 
 ```bash
 claude mcp add --scope user huasheng -- hs mcp serve
@@ -179,7 +184,7 @@ claude mcp list
 (Windows 用 `where hs`)输出的完整路径。Codex CLI 与 Claude Code 使用完整文字结果,
 不显示桌面客户端的交互卡片。
 
-### 直接聊天使用
+#### 直接聊天使用
 
 配置完成后,在 AI 客户端里直接说:
 
