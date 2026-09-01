@@ -41,6 +41,18 @@ irm https://raw.githubusercontent.com/superlcr/huasheng-cli/main/install.ps1 | i
 安装脚本会下载对应平台的包、**校验 SHA256**、解压到 `~/.local/bin`
 (Windows 为 `%LOCALAPPDATA%\Programs\hs`)。
 
+### 用 npm
+
+本来就在 Node 生态里,或者只想先试试、什么都不装:
+
+```bash
+npx @superlcr/hs --help
+npm install -g @superlcr/hs    # 装完命令仍然叫 hs
+```
+
+npm 包里只有一个很小的启动器,对应平台的二进制作为可选依赖装进来 ——
+安装时不下载、不编译。和上面 release 里的是同一个二进制。
+
 安装完成后新开一个终端,登录并确认能读到花生米余额:
 
 ```bash

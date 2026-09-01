@@ -42,6 +42,19 @@ irm https://raw.githubusercontent.com/superlcr/huasheng-cli/main/install.ps1 | i
 The installer downloads the package for your platform, **verifies its SHA256**, and extracts
 it to `~/.local/bin` (`%LOCALAPPDATA%\Programs\hs` on Windows).
 
+### With npm
+
+If you already live in the Node ecosystem, or just want to try it without installing anything:
+
+```bash
+npx @superlcr/hs --help
+npm install -g @superlcr/hs    # the command is still `hs`
+```
+
+The npm package contains a small launcher; the binary for your platform arrives as an optional
+dependency, so nothing is downloaded or compiled at install time. It is the same binary as the
+release above.
+
 After installation, open a new terminal, sign in, and confirm that `hs` can read your credit balance:
 
 ```bash
