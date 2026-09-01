@@ -204,6 +204,18 @@ create → PLANNING
 | `auto-dub` | 改完口播是否自动重录:on / off |
 | `sync` | 改完口播是否重新找画面:on / off |
 
+公共音色有 150 个左右,再加上你自己在网页上克隆的。每个都有名字和一句风格描述,
+所以别翻,直接筛:
+
+```bash
+hs voice ls                  # 全部,默认音色会标出来
+hs voice ls --search 温柔    # 名字、风格、id 都能匹配
+hs voice ls --json           # 多给一个 preview_url,可以先听再选
+```
+
+凡是要填音色的地方,id 和名字都收;只写半个名字也行,只要它唯一命中一个音色。
+命中多个时 `hs` 会把它们列出来让你按 id 挑 —— 它不会替你猜,因为选错音色意味着整片重录。
+
 换音色不会重录已经有的分镜,改语速也不会重渲它们。`hs` 每次都会说明这一点,并告诉你
 怎么把改动应用到你在意的那一镜上。
 
@@ -222,7 +234,7 @@ create → PLANNING
 | `hs material rmdir <文件夹 id>` | 删掉文件夹 |
 | `hs pref ls` / `hs pref show <id>` | 创作偏好 —— 它属于你,不属于某一个视频 |
 | `hs pref add "名字" "内容"` / `hs pref edit <id>` / `hs pref rm <id>` | 增改删 |
-| `hs voice ls` | 还没建视频时也能看的音色清单 |
+| `hs voice ls [--search <文本>]` | 还没建视频时也能看的音色清单 |
 
 用 `--material` / `--folder` 把素材推荐给花生**不等于强制它用**。
 

@@ -213,6 +213,19 @@ current list.
 | `auto-dub` | Re-record the voice after you rewrite narration: on / off |
 | `sync` | Re-search footage after you rewrite narration: on / off |
 
+There are around 150 stock voices, plus any voice you cloned on the website. Each one has a
+name and a short description of how it sounds, so narrow the list instead of scrolling it:
+
+```bash
+hs voice ls                       # all of them, with the default marked
+hs voice ls --search <text>       # match on the name, the sound, or the id
+hs voice ls --json                # adds preview_url, to listen before choosing
+```
+
+Anywhere a voice is asked for, an id or a name works, and part of a name is enough as long as
+it matches exactly one voice. If it matches several, `hs` lists them and asks you to pick by
+id — it will not guess, because the wrong voice means re-recording the whole video.
+
 Changing the voice does not re-record clips you already have, and changing the pace does not
 re-render them. `hs` says so each time, and tells you how to apply the change to a clip you
 care about.
@@ -233,7 +246,7 @@ not editable from the CLI.
 | `hs material rmdir <folder id>` | Remove a folder |
 | `hs pref ls` / `hs pref show <id>` | Style preferences, which belong to you rather than to one video |
 | `hs pref add "name" "text"` / `hs pref edit <id>` / `hs pref rm <id>` | Manage them |
-| `hs voice ls` | Narrator voices available before a video exists |
+| `hs voice ls [--search <text>]` | Narrator voices available before a video exists |
 
 Offering footage with `--material` or `--folder` does not force Huasheng to use it.
 
