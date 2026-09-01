@@ -53,7 +53,14 @@ hs wait                        # 在 PAUSED / PLAN_READY / READY / FAILED 返回
 hs chat answer "轻快一点,节奏快些"
 ```
 
-`hs chat send` 可以随时提要求,不必等它问;`hs chat history` 看之前都说过什么。
+`hs chat send` 可以随时提要求,不必等它问。说“这个”“这里”时,用 `--clip 3` 或
+`--animation 2` 把当前分镜或 MG 动画一并传给花生;两个都不加就是针对整个项目。
+`hs chat history` 看之前都说过什么。
+
+```bash
+hs chat send --clip 3 "给这段口播换一个更平静的画面"
+hs chat send --animation 2 "把这个 MG 动画讲得更精炼"
+```
 
 **4. 付钱之前先读分镜。**
 
@@ -106,7 +113,7 @@ create → PLANNING
 | :--- | :--- | :--- |
 | `QUEUED` | 在排队 | `hs fast on` 可以插队 |
 | `PLANNING` | 花生正在想或正在做 | 等 |
-| `PAUSED` | **它问了你一个问题** | `hs chat answer "…"` |
+| `PAUSED` | **它问了你一个问题** | `hs chat answer "…"`;若问的是「要不要照此方案开始制作」,用 `hs plan confirm --yes` |
 | `PLAN_READY` | 分镜方案好了,此时还没扣过任何积分 | `hs plan show --cost`,然后 `hs plan confirm --yes` |
 | `PRODUCING` | 正在一镜一镜渲染 | 等,或者先改已经好了的那几镜 |
 | `READY` | 做完了 | `hs export get` 或 `hs publish` |
@@ -146,7 +153,7 @@ create → PLANNING
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs chat answer <回答\|@文件> [--no-wait]` | 回答它正在等的那个问题 |
-| `hs chat send <消息\|@文件>` | 随时提一个要求 |
+| `hs chat send [--clip N \| --animation N] <消息\|@文件>` | 随时提要求,也可明确指向一项 |
 | `hs chat cancel` / `hs chat retry` / `hs chat clear` | 中止当前这轮、重跑一次、清空对话 |
 | `hs chat history [--limit 20]` | 之前说过什么 |
 | `hs chat watch [--timeout 300]` | 实时跟着看它在做什么 |

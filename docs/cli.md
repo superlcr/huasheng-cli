@@ -60,8 +60,14 @@ hs wait                        # returns at PAUSED, PLAN_READY, READY, or FAILED
 hs chat answer "Keep it light and fast"
 ```
 
-`hs chat send` gives a direction at any time, not only when asked. `hs chat history` shows what
-has been said so far.
+`hs chat send` gives a direction at any time, not only when asked. Attach `--clip 3` or
+`--animation 2` when “this” should mean one exact storyboard item; omit both for a project-wide
+request. `hs chat history` shows what has been said so far.
+
+```bash
+hs chat send --clip 3 "find a calmer shot for this narration"
+hs chat send --animation 2 "make this MG animation more concise"
+```
 
 **4. Read the storyboard before paying.**
 
@@ -115,7 +121,7 @@ create → PLANNING
 | :--- | :--- | :--- |
 | `QUEUED` | Waiting in line | `hs fast on` skips the queue |
 | `PLANNING` | Huasheng is thinking or working | Wait |
-| `PAUSED` | **It asked you something** | `hs chat answer "…"` |
+| `PAUSED` | **It asked you something** | `hs chat answer "…"` — but if it is asking you to approve the plan, `hs plan confirm --yes` |
 | `PLAN_READY` | Storyboard ready; nothing has been charged yet | `hs plan show --cost`, then `hs plan confirm --yes` |
 | `PRODUCING` | Rendering clip by clip | Wait, or edit clips that are already done |
 | `READY` | Finished | `hs export get` or `hs publish` |
@@ -155,7 +161,7 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | Command | What it does |
 | :--- | :--- |
 | `hs chat answer <answer\|@file> [--no-wait]` | Answer the question it is waiting on |
-| `hs chat send <message\|@file>` | Give a direction at any time |
+| `hs chat send [--clip N \| --animation N] <message\|@file>` | Give a direction, optionally about one exact item |
 | `hs chat cancel` / `hs chat retry` / `hs chat clear` | Stop the current run, run it again, or clear the thread |
 | `hs chat history [--limit 20]` | What has been said so far |
 | `hs chat watch [--timeout 300]` | Follow along while it works |
