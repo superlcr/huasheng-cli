@@ -9,7 +9,7 @@
       "name": "huasheng",
       "source": "./",
       "description": "Make videos with Huasheng from your assistant: write a script, approve the storyboard, swap footage on a clip, and export or publish. Requires the hs CLI (curl -fsSL https://raw.githubusercontent.com/superlcr/huasheng-cli/main/install.sh | sh) and a one-time browser sign-in.",
-      "version": "0.2.3"
+      "version": "0.2.4"
     }
   ]
 }
