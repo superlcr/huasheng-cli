@@ -30,7 +30,10 @@ ASSET="hs-$PLATFORM.tar.gz"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 echo "Downloading $ASSET ..."
-curl -fsSL "$BASE_URL/$ASSET"      -o "$TMP/$ASSET"   || die "Download failed: $BASE_URL/$ASSET"
+# A 25MB download with no feedback looks like a hang. curl draws its own progress bar
+# (on stderr) when a person is watching; in a log or a pipe it stays quiet as before.
+if [ -t 2 ]; then CURL_PROGRESS="-#"; else CURL_PROGRESS="-sS"; fi
+curl -fL $CURL_PROGRESS "$BASE_URL/$ASSET" -o "$TMP/$ASSET" || die "Download failed: $BASE_URL/$ASSET"
 curl -fsSL "$BASE_URL/SHA256SUMS"  -o "$TMP/SHA256SUMS" || die "Could not download the checksum file"
 
 # ---- 3. Verify (a failure must stop the install) ----
@@ -87,4 +90,9 @@ case ":$PATH:" in
      echo "    export PATH=\"$INSTALL_DIR:\$PATH\"" ;;
 esac
 echo ""
-echo "Next:  hs auth login"
+# Someone upgrading is usually already signed in — telling them to sign in again is noise.
+if [ -f "${HS_CREDENTIALS_FILE:-$HOME/.hs/credentials.json}" ]; then
+  echo "Next:  hs --help    (you are still signed in)"
+else
+  echo "Next:  hs auth login"
+fi

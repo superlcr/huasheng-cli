@@ -72,7 +72,10 @@ try {
     Write-Host "Added $Dir to your PATH. Open a new terminal window for it to take effect."
   }
   Write-Host ""
-  Write-Host "Next:  hs auth login"
+  # Someone upgrading is usually already signed in - telling them to sign in again is noise.
+  $Creds = if ($env:HS_CREDENTIALS_FILE) { $env:HS_CREDENTIALS_FILE } else { Join-Path $env:USERPROFILE ".hs\credentials.json" }
+  if (Test-Path $Creds) { Write-Host "Next:  hs --help    (you are still signed in)" }
+  else                  { Write-Host "Next:  hs auth login" }
 }
 finally {
   Remove-Item -Recurse -Force $Tmp -ErrorAction SilentlyContinue
