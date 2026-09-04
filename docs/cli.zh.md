@@ -11,21 +11,22 @@
 ## 最快的一条:一句命令
 
 ```bash
-hs make --script "杭州西湖的三个冷知识" --yes --out ./out.mp4
+hs make --script "杭州西湖的三个冷知识" --out ./out.mp4
 ```
 
 `hs make` 把整条流程替你跑完:回答 AI 导演的提问、确认分镜方案、等待成片、下载文件。
 
 ```bash
-hs make --script @script.txt --yes --out ./video.mp4        # 文稿从文件读
-hs make --script "三十秒讲清宋代点茶" --mode mg --yes        # 走动画,不走实拍素材
-hs make --pid 123456789012345 --yes                         # 从上次停下的地方接着做
+hs make --script @script.txt --out ./video.mp4        # 文稿从文件读
+hs make --script "三十秒讲清宋代点茶" --mode mg        # 走动画,不走实拍素材
+hs make --pid 123456789012345                         # 从上次停下的地方接着做
 ```
 
 `--mode` 决定怎么做:`clip` 用实拍素材剪,`mg` 配动画,`auto`(默认)交给花生判断。
 
-**`--yes` 不是客套。** 确认分镜要花积分且不可撤销,所以不带 `--yes` 时命令会停在报价那一步、
-先把价钱给你看。中途停在任何地方,它都会打印出**从这里接着走的那条完整命令** ——
+**`hs make` 会替你确认分镜方案,那一步要花积分。** 「一条命令」就是这个意思;它会打印出
+这次确认花了多少。想在扣费之前先看方案和报价,走下面的分步做法 —— `hs make --pid <pid>`
+能从任何一步接着往下跑。`make` 中途停在任何地方,都会打印出**从这里接着走的那条完整命令** ——
 照抄那一行,别重跑你最初那条。
 
 ## 一步一步来
@@ -66,7 +67,7 @@ hs chat send --animation 2 "把这个 MG 动画讲得更精炼"
 
 ```bash
 hs plan show --cost            # 要做成什么样,以及要花多少
-hs plan confirm --yes          # 花积分,开始成片
+hs plan confirm                # 花积分,开始成片 —— 并说出花了多少
 ```
 
 **5. 逐个分镜调整。** 成片是一镜一镜渲的,任何一镜都能返工。
@@ -93,10 +94,11 @@ hs settings subtitle-size 42
 
 ```bash
 hs export get --out ./out.mp4                # 下载成片
+hs publish --title "西湖冷知识"               # 看 --submit 会投出去的整份稿件;什么都不投
 hs publish --submit --title "西湖冷知识"      # 投稿到 B 站 —— 这一步是公开的
 ```
 
-`hs publish` 是唯一会让内容变公开的命令。
+`hs publish --submit` 是唯一会让内容变公开的命令。
 
 ## 项目状态
 
@@ -104,7 +106,7 @@ hs publish --submit --title "西湖冷知识"      # 投稿到 B 站 —— 这�
 create → PLANNING
        → PAUSED       等你回答                    → hs chat answer
        → PLANNING
-       → PLAN_READY   等你确认                    → hs plan confirm --yes
+       → PLAN_READY   等你确认                    → hs plan confirm
        → PRODUCING
        → READY        可以导出或投稿了
 ```
@@ -113,8 +115,8 @@ create → PLANNING
 | :--- | :--- | :--- |
 | `QUEUED` | 在排队 | `hs fast on` 可以插队 |
 | `PLANNING` | 花生正在想或正在做 | 等 |
-| `PAUSED` | **它问了你一个问题** | `hs chat answer "…"`;若问的是「要不要照此方案开始制作」,用 `hs plan confirm --yes` |
-| `PLAN_READY` | 分镜方案好了,此时还没扣过任何积分 | `hs plan show --cost`,然后 `hs plan confirm --yes` |
+| `PAUSED` | **它问了你一个问题** | `hs chat answer "…"`;若问的是「要不要照此方案开始制作」,用 `hs plan confirm` |
+| `PLAN_READY` | 分镜方案好了,此时还没扣过任何积分 | `hs plan show --cost`,然后 `hs plan confirm` |
 | `PRODUCING` | 正在一镜一镜渲染 | 等,或者先改已经好了的那几镜 |
 | `READY` | 做完了 | `hs export get` 或 `hs publish` |
 | `FAILED` | 出错了 | `hs project show` 的 `reason` 会说明原因 |
@@ -143,7 +145,7 @@ create → PLANNING
 | `hs project create --script <文本\|@文件>` | 建一个视频,打印它的 `pid` |
 | `hs project show [--pid <pid>]` | 状态、设置,以及下一步能做什么 |
 | `hs project ls [--limit 20]` | 最近的项目 |
-| `hs project rm --pid <pid> --yes` | 删掉一个 |
+| `hs project rm --pid <pid>` | 删掉一个 —— 立刻删,不可恢复 |
 | `hs use <pid>` / `hs use` / `hs use --clear` | 记住、查看、清除当前项目 |
 | `hs wait [--until any\|plan\|paused\|done] [--timeout 60]` | 一直等到需要你拿主意 |
 | `hs make …` | 以上全部一条命令跑完 —— 见上面的快速开始 |
@@ -164,8 +166,8 @@ create → PLANNING
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs plan show [--cost]` | 分镜方案;加 `--cost` 连报价一起看 |
-| `hs plan confirm --yes` | 确认 —— **花积分,且不可撤销** |
-| `hs fast` / `hs fast on [--yes]` / `hs fast off` | 查看、加入、退出快速通道 |
+| `hs plan confirm` | 确认 —— **花积分,且不可撤销** |
+| `hs fast` / `hs fast on` / `hs fast off` | 查看、加入、退出快速通道(`hs fast` 会说插队要花多少;已排上队之后 `on` 是单向的) |
 
 ### 编辑分镜
 
@@ -226,7 +228,9 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs material ls [--folder <id>] [--limit 20]` | 素材库 |
-| `hs material add --url <公网地址> [--name …] [--duration …] [--folder <id>]` | 按 URL 登记一个素材 |
+| `hs material add <文件\|地址\|id …> [--name …] [--duration …] [--folder <id>]` | 加素材:本机文件、公网地址、或编辑时传过的文件的 id。视频要先被花生读一遍才能被选用,按秒计费;图片免费 |
+| `hs material price <文件\|地址\|id …>` | 同样这些文件,`add` 会花多少 —— 什么都不加 |
+| `hs material ls --uploads` | 编辑时传过的文件(花生没读过;`add <id>` 把它读进素材库) |
 | `hs material rm <id,…>` | 删素材 |
 | `hs material mkdir <名字>` | 建一个文件夹 |
 | `hs material mv <id,…> --to <文件夹 id>` | 把素材移进去 |
@@ -245,7 +249,8 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 | `hs snapshot ls` | 可以回到哪些时点 |
 | `hs snapshot undo` / `hs snapshot redo` / `hs snapshot goto <s编号>` | 在这些时点之间移动 |
 | `hs export start [--watermark]` / `hs export status --task <id>` / `hs export get [--out <文件>] [--timeout 300]` | 渲染并下载成片 |
-| `hs publish --submit [--yes] [--title …] [--tag …] [--cover …]` | 投稿到 B 站 —— **这一步会公开** |
+| `hs publish [--title …] [--tag …] [--cover …]` | 投稿页链接,以及 `--submit` 会投出去的整份稿件 |
+| `hs publish --submit [--title …] [--tag …] [--cover …]` | 投稿到 B 站 —— **这一步会公开,且不可撤销** |
 | `hs mcp serve` | 以 MCP server 方式运行,给 AI 客户端用 |
 | `hs upgrade` | 重跑一次安装器,升到最新版 |
 
@@ -260,6 +265,25 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 
 `HS_COOKIE`、`HS_HOST`、`HS_CREDENTIALS_FILE`、`HS_STATE_FILE`、`HS_PID_REQUIRED`、
 `HS_RATE_LIMIT_WAIT` 可以从环境变量覆盖同样这些东西。
+
+## 积分与不可撤销的几步
+
+命令做的就是动词说的那件事 —— 包括要花积分的时候,在这里那是常态 —— 做完会说花了多少,
+不会问「你确定吗」。想先看再做,用对应的**只读命令**:
+
+| 做之前… | 先看 |
+| :--- | :--- |
+| `hs material add` | `hs material price <同样的文件>` |
+| `hs plan confirm` | `hs plan show --cost` |
+| `hs fast on` | `hs fast` |
+| `hs project rm` | `hs project show` |
+| `hs publish --submit` | `hs publish`(同样的参数,什么都不投) |
+
+四步撤不回:`hs plan confirm`、排队中的 `hs fast on`、`hs project rm`、`hs publish --submit`。
+其余大多数操作按花生实际做的工作量收费,事前算不出;事后 `hs chat cost` 看这一轮花了多少,
+`hs account` 看余额。
+
+`hs` 不认识的参数一律报错,什么都不跑。
 
 ## 接下来看哪里
 

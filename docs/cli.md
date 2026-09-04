@@ -12,25 +12,26 @@ one command — parameters, output shape, error codes, and examples.
 ## Quick start: one command
 
 ```bash
-hs make --script "Three little-known facts about Hangzhou's West Lake" --yes --out ./out.mp4
+hs make --script "Three little-known facts about Hangzhou's West Lake" --out ./out.mp4
 ```
 
 `hs make` runs the whole workflow for you: it answers the agent's questions, approves the
 storyboard, waits through production, and downloads the finished file.
 
 ```bash
-hs make --script @script.txt --yes --out ./video.mp4              # a script from a file
-hs make --script "Song dynasty tea whisking" --mode mg --yes      # motion graphics, not footage
-hs make --pid 123456789012345 --yes                               # resume where it stopped
+hs make --script @script.txt --out ./video.mp4              # a script from a file
+hs make --script "Song dynasty tea whisking" --mode mg      # motion graphics, not footage
+hs make --pid 123456789012345                               # resume where it stopped
 ```
 
 `--mode` picks how the video is built: `clip` cuts from footage, `mg` adds motion graphics, and
 `auto` (the default) lets Huasheng decide.
 
-**`--yes` is not optional politeness.** Approving a storyboard spends credits and cannot be
-undone, so without `--yes` the command stops at the quote and shows you the price. If it stops
-anywhere, it prints the exact command that continues from that point — copy that line rather
-than re-running your original one.
+**`hs make` approves the storyboard for you, and that spends credits.** That is what "one
+command" means; it prints what the approval cost. To read the storyboard and its price before
+anything is charged, take the long way round below — `hs make --pid <pid>` picks up from
+wherever you stopped. If `make` stops anywhere, it prints the exact command that continues from
+that point — copy that line rather than re-running your original one.
 
 ## The long way round: step by step
 
@@ -73,7 +74,7 @@ hs chat send --animation 2 "make this MG animation more concise"
 
 ```bash
 hs plan show --cost            # what it will make, and what it will cost
-hs plan confirm --yes          # spends credits, starts production
+hs plan confirm                # spends credits, starts production — and says how many
 ```
 
 **5. Adjust the clips.** Production renders clip by clip; you can rework any of them.
@@ -101,10 +102,11 @@ hs settings subtitle-size 42
 
 ```bash
 hs export get --out ./out.mp4                # download the finished video
+hs publish --title "West Lake"               # shows exactly what would be posted; posts nothing
 hs publish --submit --title "West Lake"      # post it to Bilibili — this is public
 ```
 
-`hs publish` is the only command that makes anything public.
+`hs publish --submit` is the only command that makes anything public.
 
 ## Project states
 
@@ -112,7 +114,7 @@ hs publish --submit --title "West Lake"      # post it to Bilibili — this is p
 create → PLANNING
        → PAUSED       waiting for your answer       → hs chat answer
        → PLANNING
-       → PLAN_READY   waiting for your approval     → hs plan confirm --yes
+       → PLAN_READY   waiting for your approval     → hs plan confirm
        → PRODUCING
        → READY        ready to export or publish
 ```
@@ -121,8 +123,8 @@ create → PLANNING
 | :--- | :--- | :--- |
 | `QUEUED` | Waiting in line | `hs fast on` skips the queue |
 | `PLANNING` | Huasheng is thinking or working | Wait |
-| `PAUSED` | **It asked you something** | `hs chat answer "…"` — but if it is asking you to approve the plan, `hs plan confirm --yes` |
-| `PLAN_READY` | Storyboard ready; nothing has been charged yet | `hs plan show --cost`, then `hs plan confirm --yes` |
+| `PAUSED` | **It asked you something** | `hs chat answer "…"` — but if it is asking you to approve the plan, `hs plan confirm` |
+| `PLAN_READY` | Storyboard ready; nothing has been charged yet | `hs plan show --cost`, then `hs plan confirm` |
 | `PRODUCING` | Rendering clip by clip | Wait, or edit clips that are already done |
 | `READY` | Finished | `hs export get` or `hs publish` |
 | `FAILED` | Something went wrong | `hs project show` explains why in `reason` |
@@ -151,7 +153,7 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | `hs project create --script <text\|@file>` | Start a video and print its `pid` |
 | `hs project show [--pid <pid>]` | State, settings, and what can happen next |
 | `hs project ls [--limit 20]` | Your recent videos |
-| `hs project rm --pid <pid> --yes` | Delete one |
+| `hs project rm --pid <pid>` | Delete one — at once, and it cannot be undone |
 | `hs use <pid>` / `hs use` / `hs use --clear` | Remember, show, or forget the current video |
 | `hs wait [--until any\|plan\|paused\|done] [--timeout 60]` | Block until Huasheng needs a decision |
 | `hs make …` | All of the above in one command — see the quick start |
@@ -172,8 +174,8 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | Command | What it does |
 | :--- | :--- |
 | `hs plan show [--cost]` | The storyboard, and the price with `--cost` |
-| `hs plan confirm --yes` | Approve it — **this spends credits and cannot be undone** |
-| `hs fast` / `hs fast on [--yes]` / `hs fast off` | Check, join, or leave the priority lane |
+| `hs plan confirm` | Approve it — **this spends credits and cannot be undone** |
+| `hs fast` / `hs fast on` / `hs fast off` | Check, join, or leave the priority lane (`hs fast` shows what skipping costs; once queued, `on` is one-way) |
 
 ### Editing clips
 
@@ -238,7 +240,9 @@ not editable from the CLI.
 | Command | What it does |
 | :--- | :--- |
 | `hs material ls [--folder <id>] [--limit 20]` | Your footage library |
-| `hs material add --url <public url> [--name …] [--duration …] [--folder <id>]` | Register a clip by URL |
+| `hs material add <file\|url\|id …> [--name …] [--duration …] [--folder <id>]` | Add footage: files on this machine, public URLs, or ids of files sent while editing. Huasheng reads video before it can pick it, charged by the second; images are free |
+| `hs material price <file\|url\|id …>` | What `add` would cost for the same files, without adding anything |
+| `hs material ls --uploads` | Files you sent while editing (never read; `add <id>` reads one into the library) |
 | `hs material rm <id,…>` | Remove footage |
 | `hs material mkdir <name>` | Make a folder |
 | `hs material mv <id,…> --to <folder id>` | Move footage into one |
@@ -257,7 +261,8 @@ Offering footage with `--material` or `--folder` does not force Huasheng to use 
 | `hs snapshot ls` | Points you can go back to |
 | `hs snapshot undo` / `hs snapshot redo` / `hs snapshot goto <s-number>` | Move between them |
 | `hs export start [--watermark]` / `hs export status --task <id>` / `hs export get [--out <file>] [--timeout 300]` | Render and download the finished video |
-| `hs publish --submit [--yes] [--title …] [--tag …] [--cover …]` | Post it to Bilibili — **this makes it public** |
+| `hs publish [--title …] [--tag …] [--cover …]` | The upload page link, and exactly what `--submit` would post |
+| `hs publish --submit [--title …] [--tag …] [--cover …]` | Post it to Bilibili — **this makes it public and cannot be undone** |
 | `hs mcp serve` | Run as an MCP server so an AI client can use Huasheng |
 | `hs upgrade` | Re-run the installer to get the latest release |
 
@@ -272,6 +277,27 @@ Offering footage with `--material` or `--folder` does not force Huasheng to use 
 
 `HS_COOKIE`, `HS_HOST`, `HS_CREDENTIALS_FILE`, `HS_STATE_FILE`, `HS_PID_REQUIRED`, and
 `HS_RATE_LIMIT_WAIT` override the same things from the environment.
+
+## Credits and one-way steps
+
+A command does what its verb says — including when that costs credits, which is normal here —
+and says what it cost. Nothing asks "are you sure". Looking before you act is a separate,
+read-only command:
+
+| Before you… | Look with |
+| :--- | :--- |
+| `hs material add` | `hs material price <same files>` |
+| `hs plan confirm` | `hs plan show --cost` |
+| `hs fast on` | `hs fast` |
+| `hs project rm` | `hs project show` |
+| `hs publish --submit` | `hs publish` (same options, nothing posted) |
+
+Four steps cannot be taken back: `hs plan confirm`, `hs fast on` while queued, `hs project rm`,
+`hs publish --submit`. Most other steps are charged for the work Huasheng actually does, so they
+cannot be priced in advance; `hs chat cost` shows what a round came to afterwards, and
+`hs account` shows the balance.
+
+An option `hs` does not know is an error, and nothing runs.
 
 ## Where to go next
 

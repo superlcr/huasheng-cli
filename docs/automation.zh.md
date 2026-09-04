@@ -21,23 +21,25 @@ $ hs project show --json
 ```json
 {
   "error": {
-    "code": "CONFIRM_REQUIRED",
+    "code": "INSUFFICIENT_POINTS",
     "message": "...",
     "retryable": false,
-    "suggested_action": "confirm",
-    "next_command": "hs plan confirm --pid ... --yes"
+    "suggested_action": "topup",
+    "next_command": "hs make --pid ... --mode mg"
   }
 }
 ```
 
-- `suggested_action` ∈ `login` · `topup` · `retry` · `confirm` · `null`
+- `suggested_action` ∈ `login` · `topup` · `retry` · `null`
 - `next_command` 只在确实有一条可照抄命令时出现
 - 普通命令退出码:`0` 成功 · `1` 命令失败 · `2` 用法错误
-- `hs make` 退出码:`0` 成片 · `3` 等确认 · `4` 失败 · `5` 达到兜底上限 · `6` 花生米不足
+- `hs make` 退出码:`0` 成片 · `4` 失败 · `5` 达到兜底上限 · `6` 花生米不足
 
 ## 三条控制流约定
 
-1. `CONFIRM_REQUIRED` 应停下来问人,不能自动加 `--yes`。
+1. `hs` 不会问「你确定吗」。四条命令撤不回(`plan confirm` · `project rm` ·
+   排队中的 `fast on` · `publish --submit`):跑之前**先**跟人确认。`hs help account` 里那几条
+   只读命令能看到每一步会做什么、花多少。
 2. 分镜写操作返回 `applied: false` 表示仍在后台执行,不是失败。
 3. `hs wait` 返回 `timed_out: true` 表示本轮等待结束,再次调用即可。
 

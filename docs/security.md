@@ -29,7 +29,7 @@ hs/<version> (mcp; darwin-arm64; huasheng_create_project)
 ```
 
 Scripts and footage are uploaded to Huasheng to make the video. Only
-`hs publish --submit --yes` publishes content publicly.
+`hs publish --submit` publishes content publicly.
 
 ## Requirements
 

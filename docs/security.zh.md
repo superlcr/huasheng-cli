@@ -28,7 +28,7 @@ hs/<版本号> (mcp; darwin-arm64; huasheng_create_project)
 ```
 
 其中不包含文稿、标题、pid、文件名或素材内容。文稿和素材会上传到花生用于生成视频;
-只有 `hs publish --submit --yes` 会把内容发布到公网。
+只有 `hs publish --submit` 会把内容发布到公网。
 
 `hs auth logout` 只删除本机凭据。凭据若已泄漏,请到 B 站账号安全页退出全部设备或修改密码。
 

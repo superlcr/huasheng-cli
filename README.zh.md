@@ -103,22 +103,23 @@ CLI 和所有 AI 客户端共用 `~/.hs/credentials.json`,不需要分别登录�
 用一句话生成视频:
 
 ```bash
-hs make --script "介绍杭州西湖的三个冷知识" --yes --out ./out.mp4
+hs make --script "介绍杭州西湖的三个冷知识" --out ./out.mp4
 ```
 
 指定 MG 风格:
 
 ```bash
-hs make --script "用 30 秒解释宋代点茶" --mode mg --yes --out ./tea.mp4
+hs make --script "用 30 秒解释宋代点茶" --mode mg --out ./tea.mp4
 ```
 
 从文件读取长文稿:
 
 ```bash
-hs make --script @script.txt --yes --out ./video.mp4
+hs make --script @script.txt --out ./video.mp4
 ```
 
-`--yes` 表示你同意在方案确认时扣除花生米;不加时会停在报价确认处。
+`hs make` 会替你确认分镜方案 —— 那一步扣花生米,它会打印出扣了多少。想先看方案和报价再决定,
+用分步命令。
 更多参数、分步修改、续跑和导出方法见[hs CLI 使用指南](docs/cli.zh.md),
 JSON、退出码和批量任务见[脚本与自动化](docs/automation.zh.md)。
 

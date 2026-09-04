@@ -106,24 +106,25 @@ a complete script, run the creation workflow, wait for the finished video, and d
 Create a video from one sentence:
 
 ```bash
-hs make --script "Three little-known facts about West Lake" --yes --out ./out.mp4
+hs make --script "Three little-known facts about West Lake" --out ./out.mp4
 ```
 
 Request an MG-style video:
 
 ```bash
-hs make --script "Explain Song dynasty tea whisking in 30 seconds" --mode mg --yes --out ./tea.mp4
+hs make --script "Explain Song dynasty tea whisking in 30 seconds" --mode mg --out ./tea.mp4
 ```
 
 Read a long script from a file:
 
 ```bash
-hs make --script @script.txt --yes --out ./video.mp4
+hs make --script @script.txt --out ./video.mp4
 ```
 
-`--yes` approves the credit charge when the storyboard is confirmed; without it, `hs` stops for
-confirmation. See the [hs CLI guide](docs/cli.md) for parameters, step-by-step editing, resuming,
-and exporting. See [Scripting and automation](docs/automation.md) for JSON, exit codes, and batches.
+`hs make` approves the storyboard for you — that spends credits, and it prints how many. To read
+the storyboard and its price first, use the step-by-step commands instead. See the
+[hs CLI guide](docs/cli.md) for parameters, step-by-step editing, resuming, and exporting. See
+[Scripting and automation](docs/automation.md) for JSON, exit codes, and batches.
 
 ### Option 2: use hs through MCP in an AI client
 

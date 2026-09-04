@@ -19,21 +19,26 @@ Failures use one envelope:
 ```json
 {
   "error": {
-    "code": "CONFIRM_REQUIRED",
+    "code": "INSUFFICIENT_POINTS",
     "message": "...",
     "retryable": false,
-    "suggested_action": "confirm",
-    "next_command": "hs plan confirm --pid ... --yes"
+    "suggested_action": "topup",
+    "next_command": "hs make --pid ... --mode mg"
   }
 }
 ```
 
+- `suggested_action` is one of `login` · `topup` · `retry` · `null`
+- `next_command` appears only when there is a command you can actually run
 - Normal exit codes: `0` success, `1` command failure, `2` usage error
-- `hs make`: `0` finished, `3` waiting for approval, `4` failed, `5` safety limit, `6` insufficient credits
+- `hs make`: `0` finished, `4` failed, `5` safety limit, `6` insufficient credits
 
 ## Control-flow rules
 
-1. Stop and ask a person on `CONFIRM_REQUIRED`; never add `--yes` automatically.
+1. Nothing in `hs` asks "are you sure". Four commands cannot be undone
+   (`plan confirm` · `project rm` · `fast on` while queued · `publish --submit`): check with the
+   person **before** running them. The read-only commands in `hs help account` show what each
+   would do or cost.
 2. `applied: false` means a clip operation is still running, not that it failed.
 3. `timed_out: true` from `hs wait` means call it again.
 
