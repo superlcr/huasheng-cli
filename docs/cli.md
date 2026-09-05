@@ -20,6 +20,7 @@ storyboard, waits through production, and downloads the finished file.
 
 ```bash
 hs make --script @script.txt --out ./video.mp4              # a script from a file
+hs make --audio ./narration.m4a --script @transcript.txt --out ./video.mp4
 hs make --script "Song dynasty tea whisking" --mode mg      # motion graphics, not footage
 hs make --pid 123456789012345                               # resume where it stopped
 ```
@@ -50,6 +51,7 @@ drop `--pid`.
 
 ```bash
 hs project create --script "Three little-known facts about Hangzhou's West Lake"
+hs project create --audio ./narration.m4a --script @transcript.txt
 hs use 123456789012345
 ```
 
@@ -151,6 +153,7 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | Command | What it does |
 | :--- | :--- |
 | `hs project create --script <text\|@file>` | Start a video and print its `pid` |
+| `hs project create --audio <local file> --script <transcript\|@file>` | Start from your own narration and its transcript; `hs` handles the upload privately |
 | `hs project show [--pid <pid>]` | State, settings, and what can happen next |
 | `hs project ls [--limit 20]` | Your recent videos |
 | `hs project rm --pid <pid>` | Delete one — at once, and it cannot be undone |

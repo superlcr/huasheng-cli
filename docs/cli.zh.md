@@ -18,6 +18,7 @@ hs make --script "杭州西湖的三个冷知识" --out ./out.mp4
 
 ```bash
 hs make --script @script.txt --out ./video.mp4        # 文稿从文件读
+hs make --audio ./口播.m4a --script @逐字稿.txt --out ./video.mp4  # 自己的声音 + 逐字稿
 hs make --script "三十秒讲清宋代点茶" --mode mg        # 走动画,不走实拍素材
 hs make --pid 123456789012345                         # 从上次停下的地方接着做
 ```
@@ -44,6 +45,7 @@ hs account          # 能看到积分余额就说明登录成功了
 
 ```bash
 hs project create --script "杭州西湖的三个冷知识"
+hs project create --audio ./口播.m4a --script @逐字稿.txt
 hs use 123456789012345
 ```
 
@@ -143,6 +145,7 @@ create → PLANNING
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs project create --script <文本\|@文件>` | 建一个视频,打印它的 `pid` |
+| `hs project create --audio <本地文件> --script <逐字稿\|@文件>` | 用自己的口播和对应逐字稿建视频；上传由 `hs` 在内部完成 |
 | `hs project show [--pid <pid>]` | 状态、设置,以及下一步能做什么 |
 | `hs project ls [--limit 20]` | 最近的项目 |
 | `hs project rm --pid <pid>` | 删掉一个 —— 立刻删,不可恢复 |

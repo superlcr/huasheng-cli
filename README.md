@@ -121,6 +121,15 @@ Read a long script from a file:
 hs make --script @script.txt --out ./video.mp4
 ```
 
+Use your own narration recording with its word-for-word transcript:
+
+```bash
+hs make --audio ./narration.m4a --script @transcript.txt --out ./video.mp4
+```
+
+`hs` uploads the recording privately; you never need an internal storage address. Supported
+formats are mp3, wav, flac, mp4 and m4a. In this mode `--script` is the matching transcript.
+
 `hs make` approves the storyboard for you — that spends credits, and it prints how many. To read
 the storyboard and its price first, use the step-by-step commands instead. See the
 [hs CLI guide](docs/cli.md) for parameters, step-by-step editing, resuming, and exporting. See
@@ -216,7 +225,7 @@ before either action.
 
 - The CLI and every AI client share one local credential; `hs` never receives your Bilibili password.
 - Approving a storyboard spends credits, and publishing goes public. Both require your confirmation.
-- Scripts and footage are uploaded to Huasheng for video creation; there is no separate telemetry
+- Scripts, narration recordings, and footage are uploaded to Huasheng for video creation; there is no separate telemetry
   channel or background updater.
 
 ## Upgrading
