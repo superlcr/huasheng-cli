@@ -12,7 +12,7 @@ the browser; `hs` never receives your password.
 | File | Contents | Notes |
 | :--- | :--- | :--- |
 | `~/.hs/credentials.json` | Sign-in credentials (mode `0600`) | Shared by CLI and MCP clients; removed by `hs auth logout` |
-| `~/.hs/state.json` | Current pid and resume state | Contains no credentials |
+| `~/.hs/state.json` | Current pid and resume state | Contains no credentials; survives `hs auth logout` |
 
 Use `HS_CREDENTIALS_FILE` and `HS_STATE_FILE` to change these paths in CI or containers.
 
@@ -28,7 +28,7 @@ hs/<version> (cli; darwin-arm64; project create)
 hs/<version> (mcp; darwin-arm64; huasheng_create_project)
 ```
 
-Scripts and footage are uploaded to Huasheng to make the video. Only
+Scripts, narration recordings, and footage are uploaded to Huasheng to make the video. Only
 `hs publish --submit` publishes content publicly.
 
 ## Requirements

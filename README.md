@@ -121,14 +121,16 @@ Read a long script from a file:
 hs make --script @script.txt --out ./video.mp4
 ```
 
-Use your own narration recording with its word-for-word transcript:
+Or start from your own narration recording — a file on your computer or a public URL:
 
 ```bash
-hs make --audio ./narration.m4a --script @transcript.txt --out ./video.mp4
+hs make --audio ./narration.m4a --out ./video.mp4
+hs make --audio ./narration.m4a --transcript @words.txt --out ./video.mp4   # if you have the words
 ```
 
-`hs` uploads the recording privately; you never need an internal storage address. Supported
-formats are mp3, wav, flac, mp4 and m4a. In this mode `--script` is the matching transcript.
+Huasheng keeps your voice and cuts footage to it. The transcript is optional; without it, Huasheng
+transcribes the recording. Supported formats are mp3, wav, flac, mp4 and m4a; `hs` uploads the
+file itself and you never need an internal storage address.
 
 `hs make` approves the storyboard for you — that spends credits, and it prints how many. To read
 the storyboard and its price first, use the step-by-step commands instead. See the
@@ -212,8 +214,9 @@ You can inspect and refine existing projects too:
 
 > Replace clip 3 with more futuristic footage
 
-Confirming a storyboard spends credits, and publishing makes the video public. The client asks
-before either action.
+Confirming a storyboard spends credits, and publishing makes the video public. `hs` marks both
+tools as destructive, so a client that confirms destructive tools asks you first; `hs` itself
+does not prompt.
 
 ## More documentation
 
@@ -224,7 +227,8 @@ before either action.
 ## Safety boundaries
 
 - The CLI and every AI client share one local credential; `hs` never receives your Bilibili password.
-- Approving a storyboard spends credits, and publishing goes public. Both require your confirmation.
+- Approving a storyboard spends credits, and publishing goes public. `hs` does what the command says
+  and reports the cost; whether you are asked first is up to you, your script, or your AI client.
 - Scripts, narration recordings, and footage are uploaded to Huasheng for video creation; there is no separate telemetry
   channel or background updater.
 
