@@ -39,7 +39,8 @@ $ hs project show --json
 
 1. `hs` 不会问「你确定吗」。四条命令撤不回(`plan confirm` · `project rm` ·
    排队中的 `fast on` · `publish --submit`):跑之前**先**跟人确认。`hs help account` 里那几条
-   只读命令能看到每一步会做什么、花多少。
+   只读命令能看到每一步会做什么、花多少。还有两处虽然能从存档点回退、但花生米扣了不退:生产后的
+   `settings voice`(`--cost` 先报价)和给文件或地址的 `material add` / `chat send --attach`(`material price` 先报价)。
 2. 分镜写操作返回 `applied: false` 表示仍在后台执行,不是失败。
 3. `hs wait` 返回 `timed_out: true` 表示本轮等待结束,再次调用即可。
 

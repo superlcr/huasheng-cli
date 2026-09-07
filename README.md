@@ -214,9 +214,15 @@ You can inspect and refine existing projects too:
 
 > Replace clip 3 with more futuristic footage
 
-Confirming a storyboard spends credits, and publishing makes the video public. `hs` marks both
-tools as destructive, so a client that confirms destructive tools asks you first; `hs` itself
-does not prompt.
+> Use my own file ./b-roll.mp4 for clip 2
+
+> Change the narrator to a warmer voice, and tell me the price first
+
+Confirming a storyboard spends credits, and publishing makes the video public. `hs` marks those
+and the other one-way tools (deleting a project, footage or a preference, joining the priority lane)
+as destructive, so a client that confirms destructive tools asks you first; `hs` itself does not
+prompt. Changing the voice after production and adding footage to the library spend credits too;
+the MCP tools quote the price when asked.
 
 ## More documentation
 
@@ -227,8 +233,9 @@ does not prompt.
 ## Safety boundaries
 
 - The CLI and every AI client share one local credential; `hs` never receives your Bilibili password.
-- Approving a storyboard spends credits, and publishing goes public. `hs` does what the command says
-  and reports the cost; whether you are asked first is up to you, your script, or your AI client.
+- Approving a storyboard spends credits, and publishing goes public. So do changing the voice after
+  production and adding footage to the library, and those credits are not refunded. `hs` does what the
+  command says and reports the cost; whether you are asked first is up to you, your script, or your AI client.
 - Scripts, narration recordings, and footage are uploaded to Huasheng for video creation; there is no separate telemetry
   channel or background updater.
 

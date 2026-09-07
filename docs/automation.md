@@ -38,7 +38,9 @@ Failures use one envelope:
 1. Nothing in `hs` asks "are you sure". Four commands cannot be undone
    (`plan confirm` · `project rm` · `fast on` while queued · `publish --submit`): check with the
    person **before** running them. The read-only commands in `hs help account` show what each
-   would do or cost.
+   would do or cost. Two more spend credits that are not refunded even though the result can be
+   reverted from a checkpoint: `settings voice` once production has started (`--cost` quotes it) and
+   `material add` / `chat send --attach` with a file or URL (`material price` quotes it).
 2. `applied: false` means a clip operation is still running, not that it failed.
 3. `timed_out: true` from `hs wait` means call it again.
 
