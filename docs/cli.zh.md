@@ -139,6 +139,7 @@ create → PLANNING
 | `hs auth refresh` | 续期,不必重新登录 |
 | `hs auth logout` | 清掉本地凭据 |
 | `hs account` | 积分余额,按批次列出各自的过期时间 |
+| `hs account bill [--pid <pid>] [--limit n] [--type all\|in\|out]` | 花生米账单,带逐项拆分 |
 
 ### 建项目与跟踪
 
@@ -158,9 +159,9 @@ create → PLANNING
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs chat answer <回答\|@文件> [--no-wait]` | 回答它正在等的那个问题 |
-| `hs chat send [--clip N \| --animation N] <消息\|@文件>` | 随时提要求,也可明确指向一项 |
+| `hs chat send [--clip N \| --animation N] [--attach <id\|文件\|地址> …] <消息\|@文件>` | 随时提要求,也可明确指向一项;`--attach`(最多 8 个)把素材库里的素材递给它 —— 给文件或地址会先加进素材库,和 `hs material add` 一样计费 |
 | `hs chat cancel` / `hs chat retry` / `hs chat clear` | 中止当前这轮、重跑一次、清空对话 |
-| `hs chat history [--limit 20]` | 之前说过什么 |
+| `hs chat history [--limit 20] [--before <run_id>]` | 之前说过什么、每一轮改了什么;`--before` 往前翻页 |
 | `hs chat watch [--timeout 300]` | 实时跟着看它在做什么 |
 | `hs chat cost [--run <run_id>]` | 某一轮花了多少 |
 
@@ -178,15 +179,17 @@ create → PLANNING
 | :--- | :--- |
 | `hs clip ls` | 每一镜:时长、画面、口播首行 |
 | `hs clip show --clip <#>` | 这一镜的全文 |
-| `hs clip edit --clip <#> --text "…"` | 改口播 |
+| `hs clip edit --clip <#> --text "…"` | 改口播(之前标好的读音跟着词走,不会丢) |
+| `hs clip edit --clip <#> --say "词=读音"` | 告诉旁白某个词怎么读(可重复;`--say -` 全部去掉) |
 | `hs clip add --text "…" [--after <#>\|--before <#>]` | 插一镜 |
 | `hs clip rm --clip <#>` | 删一镜 |
 | `hs clip split --clip <#> --at <行号>` | 在某一行之后拆开 |
 | `hs clip merge --clip <#> --into <#>` | 并成一镜 |
 | `hs clip retry --clip <#>` | 重做失败的那一镜 |
-| `hs clip dub --clip <#> [--undo]` | 单独重录这一镜的配音 |
-| `hs clip candidates --clip <#> [--like <uuid>]` | 这一镜还有哪些画面可选 |
+| `hs clip dub --clip <#> [--text "…"] [--undo] [--cancel]` | 单独重录这一镜的配音;`--text` 只重录改动的字词;`--cancel` 停掉还在生成的那次 |
+| `hs clip candidates --clip <#> [--like <uuid>] [--captions]` | 这一镜还有哪些画面可选;`--captions` 带上每段画面的内容描述 |
 | `hs clip pick --clip <#> --candidate <#\|uuid>` | 换成其中一个 |
+| `hs clip pick --clip <#> --file <mp4\|mov\|jpg\|png\|地址\|id> [--start <秒>] [--crop x,y,w,h]` | 改用你自己的画面 —— 免费;`--start` 指定从文件第几秒开始 |
 | `hs clip srt [--out <文件>]` | 导出 SRT 字幕 |
 
 ### 观感与声音
@@ -196,7 +199,8 @@ create → PLANNING
 | 设置项 | 可填 |
 | :--- | :--- |
 | `aspect` | `16:9` 或 `9:16` |
-| `voice` | 旁白音色,填 id 或名字(`hs voice ls` 列出全部) |
+| `portrait-style` | 竖屏版怎么包装画面:`frame` / `blur` |
+| `voice` | 旁白音色,填 id 或名字(`hs voice ls` 列出全部)。开始生产前免费,之后见下 |
 | `speed` | 语速,1.0 到 2.0 |
 | `name` | 这个视频叫什么 |
 | `subtitle` | on / off |
@@ -208,6 +212,18 @@ create → PLANNING
 | `voice-volume` | 0 到 100 |
 | `auto-dub` | 改完口播是否自动重录:on / off |
 | `sync` | 改完口播是否重新找画面:on / off |
+
+**开始生产之后换音色**会把每个分镜重新配音、整片重新渲染,按字数扣花生米。
+已扣花生米不退;完成后若有对应的历史版本,可以撤销修改,先用 `hs snapshot ls` 检查。
+`hs settings voice <id> --cost` 只报价、什么都不改;不带 `--cost` 就真换,并一直等到所有分镜换完
+(`--no-wait` 立刻返回,之后 `hs project show` 会一直显示 `voice_changing` 直到换完)。
+用你自己录音做旁白的视频没有音色可换。
+
+```bash
+hs settings voice 磁性男音 --cost         # 「约 16 花生米(283 个计费字)」,什么都没改
+hs settings voice 磁性男音                # 真换,并等分镜换完
+hs settings voice 磁性男音 --no-wait      # 真换,回头再看
+```
 
 公共音色有 150 个左右,再加上你自己在网页上克隆的。每个都有名字和一句风格描述,
 所以别翻,直接筛:
@@ -221,16 +237,16 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 凡是要填音色的地方,id 和名字都收;只写半个名字也行,只要它唯一命中一个音色。
 命中多个时 `hs` 会把它们列出来让你按 id 挑 —— 它不会替你猜,因为选错音色意味着整片重录。
 
-换音色不会重录已经有的分镜,改语速也不会重渲它们。`hs` 每次都会说明这一点,并告诉你
-怎么把改动应用到你在意的那一镜上。
+改语速会应用到之后的预览和导出,无需重新生成分镜。
+`hs settings speed 1.3 --preview [--clip N]` 把一镜按这个语速渲染一段试听,什么都不改。
 
-`hs mg ls` / `hs mg show <id>` / `hs mg hide <id>` 控制动画的显示与隐藏,动画内容本身不在 CLI 里改。
+`hs mg ls` / `hs mg show <id>` / `hs mg hide <id>` 控制动画的显示与隐藏,`hs mg rm <id>` 彻底删掉一条;动画内容本身不在 CLI 里改。
 
 ### 自己的素材与偏好
 
 | 命令 | 作用 |
 | :--- | :--- |
-| `hs material ls [--folder <id>] [--limit 20]` | 素材库 |
+| `hs material ls [--folder <id>] [--limit 20] [--status ready\|analysing\|uploaded\|failed] [--sort created\|updated] [--oldest]` | 素材库,可过滤、排序 |
 | `hs material add <文件\|地址\|id …> [--name …] [--duration …] [--folder <id>]` | 加素材:本机文件、公网地址、或编辑时传过的文件的 id。视频要先被花生读一遍才能被选用,按秒计费;图片免费 |
 | `hs material price <文件\|地址\|id …>` | 同样这些文件,`add` 会花多少 —— 什么都不加 |
 | `hs material ls --uploads` | 编辑时传过的文件(花生没读过;`add <id>` 把它读进素材库) |
@@ -250,9 +266,11 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs snapshot ls` | 可以回到哪些时点 |
+| `hs snapshot show <s编号>` | 只看某个时点长什么样,不跳过去 |
 | `hs snapshot undo` / `hs snapshot redo` / `hs snapshot goto <s编号>` | 在这些时点之间移动 |
-| `hs export start [--watermark]` / `hs export status --task <id>` / `hs export get [--out <文件>] [--timeout 300]` | 渲染并下载成片 |
-| `hs publish [--title …] [--tag …] [--cover …]` | 投稿页链接,以及 `--submit` 会投出去的整份稿件 |
+| `hs snapshot undo --run <run_id>` | 把花生某一轮做的事整个撤掉 |
+| `hs export start [--watermark] [--ai-mark\|--no-ai-mark]` / `hs export status --task <id>` / `hs export get [--out <文件>] [--timeout 300]` | 渲染并下载成片。「AI生成」角标默认跟随你账号的设置,这两个参数可以改(`hs make --out` 和 `hs publish` 也收) |
+| `hs publish [--title …] [--tag …] [--cover …] [--ai-label on\|off] [--set source=…]` | 投稿页链接,以及 `--submit` 会投出去的整份稿件;`--ai-label` 设 B 站的「AI 生成内容」声明(只有克隆音色的视频能改),转载必须给 `source` |
 | `hs publish --submit [--title …] [--tag …] [--cover …]` | 投稿到 B 站 —— **这一步会公开,且不可撤销** |
 | `hs mcp serve` | 以 MCP server 方式运行,给 AI 客户端用 |
 | `hs upgrade` | 重跑一次安装器,升到最新版 |
@@ -284,7 +302,7 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 
 四步撤不回:`hs plan confirm`、排队中的 `hs fast on`、`hs project rm`、`hs publish --submit`。
 其余大多数操作按花生实际做的工作量收费,事前算不出;事后 `hs chat cost` 看这一轮花了多少,
-`hs account` 看余额。
+`hs account` 看余额和会员状态;`hs account bill` 看米花哪了。
 
 `hs` 不认识的参数一律报错,什么都不跑。
 

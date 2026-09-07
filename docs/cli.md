@@ -147,6 +147,7 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | `hs auth refresh` | Renew the session without signing in again |
 | `hs auth logout` | Forget the saved credentials |
 | `hs account` | Your credit balance, batch by batch, with expiry dates |
+| `hs account bill [--pid <pid>] [--limit n] [--type all\|in\|out]` | Where the credits went, with the per-item breakdown |
 
 ### Start and track a video
 
@@ -166,9 +167,9 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | Command | What it does |
 | :--- | :--- |
 | `hs chat answer <answer\|@file> [--no-wait]` | Answer the question it is waiting on |
-| `hs chat send [--clip N \| --animation N] <message\|@file>` | Give a direction, optionally about one exact item |
+| `hs chat send [--clip N \| --animation N] [--attach <id\|file\|url> …] <message\|@file>` | Give a direction, optionally about one exact item; `--attach` (up to 8) hands it footage from your library — a file or URL is added to the library first, billed like `hs material add` |
 | `hs chat cancel` / `hs chat retry` / `hs chat clear` | Stop the current run, run it again, or clear the thread |
-| `hs chat history [--limit 20]` | What has been said so far |
+| `hs chat history [--limit 20] [--before <run_id>]` | What has been said so far, and what each round changed; `--before` pages further back |
 | `hs chat watch [--timeout 300]` | Follow along while it works |
 | `hs chat cost [--run <run_id>]` | What one run cost |
 
@@ -186,15 +187,17 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | :--- | :--- |
 | `hs clip ls` | Every clip: length, footage, first line of narration |
 | `hs clip show --clip <#>` | One clip in full |
-| `hs clip edit --clip <#> --text "…"` | Rewrite the narration |
+| `hs clip edit --clip <#> --text "…"` | Rewrite the narration (readings set earlier stay with their words) |
+| `hs clip edit --clip <#> --say "word=reading"` | Tell the narrator how to read a word (repeatable; `--say -` removes all) |
 | `hs clip add --text "…" [--after <#>\|--before <#>]` | Insert a new clip |
 | `hs clip rm --clip <#>` | Remove one |
 | `hs clip split --clip <#> --at <line>` | Split after a line of narration |
 | `hs clip merge --clip <#> --into <#>` | Merge two clips |
 | `hs clip retry --clip <#>` | Rebuild a clip that failed |
-| `hs clip dub --clip <#> [--undo]` | Re-record the voice for one clip |
-| `hs clip candidates --clip <#> [--like <uuid>]` | Other footage for this clip |
+| `hs clip dub --clip <#> [--text "…"] [--undo] [--cancel]` | Re-record the voice for one clip; `--text` re-records only the words that differ; `--cancel` stops one still being generated |
+| `hs clip candidates --clip <#> [--like <uuid>] [--captions]` | Other footage for this clip; `--captions` adds what each piece shows |
 | `hs clip pick --clip <#> --candidate <#\|uuid>` | Use one of them |
+| `hs clip pick --clip <#> --file <mp4\|mov\|jpg\|png\|url\|id> [--start <s>] [--crop x,y,w,h]` | Use your own footage for this clip instead — free; `--start` picks where in the file it begins |
 | `hs clip srt [--out <file>]` | Export subtitles as SRT |
 
 ### Look and sound
@@ -205,7 +208,8 @@ current list.
 | Item | Accepts |
 | :--- | :--- |
 | `aspect` | `16:9` or `9:16` |
-| `voice` | A narrator voice, by id or name (`hs voice ls` lists them) |
+| `portrait-style` | How the portrait version frames the picture: `frame` / `blur` |
+| `voice` | A narrator voice, by id or name (`hs voice ls` lists them). Free until production starts; after that see below |
 | `speed` | Speaking pace, 1.0 to 2.0 |
 | `name` | What this video is called |
 | `subtitle` | on / off |
@@ -217,6 +221,19 @@ current list.
 | `voice-volume` | 0 to 100 |
 | `auto-dub` | Re-record the voice after you rewrite narration: on / off |
 | `sync` | Re-search footage after you rewrite narration: on / off |
+
+**Changing the voice after production has started** re-records every clip and re-renders the
+video, billed per character. Credits spent are not refunded. After completion, the edit can be
+undone if its checkpoint is available; inspect `hs snapshot ls` first. `hs settings voice <id> --cost` quotes it
+without changing anything; without `--cost` hs does it and waits until every clip is done
+(`--no-wait` returns at once, and `hs project show` reports `voice_changing` until it finishes).
+Videos narrated by your own recording have no voice to change.
+
+```bash
+hs settings voice 磁性男音 --cost         # "about 16 credits (283 billed characters)" — nothing changed
+hs settings voice 磁性男音                # do it, then wait for the clips
+hs settings voice 磁性男音 --no-wait      # do it and come back later
+```
 
 There are around 150 stock voices, plus any voice you cloned on the website. Each one has a
 name and a short description of how it sounds, so narrow the list instead of scrolling it:
@@ -231,18 +248,17 @@ Anywhere a voice is asked for, an id or a name works, and part of a name is enou
 it matches exactly one voice. If it matches several, `hs` lists them and asks you to pick by
 id — it will not guess, because the wrong voice means re-recording the whole video.
 
-Changing the voice does not re-record clips you already have, and changing the pace does not
-re-render them. `hs` says so each time, and tells you how to apply the change to a clip you
-care about.
+Changing the pace applies to previews and the export from then on; nothing to rebuild.
+`hs settings speed 1.3 --preview [--clip N]` renders one clip at that pace to listen to, changing nothing.
 
-`hs mg ls` / `hs mg show <id>` / `hs mg hide <id>` show or hide motion graphics. Their content is
+`hs mg ls` / `hs mg show <id>` / `hs mg hide <id>` show or hide motion graphics; `hs mg rm <id>` deletes one for good. Their content is
 not editable from the CLI.
 
 ### Your own footage and preferences
 
 | Command | What it does |
 | :--- | :--- |
-| `hs material ls [--folder <id>] [--limit 20]` | Your footage library |
+| `hs material ls [--folder <id>] [--limit 20] [--status ready\|analysing\|uploaded\|failed] [--sort created\|updated] [--oldest]` | Your footage library, filtered and ordered |
 | `hs material add <file\|url\|id …> [--name …] [--duration …] [--folder <id>]` | Add footage: files on this machine, public URLs, or ids of files sent while editing. Huasheng reads video before it can pick it, charged by the second; images are free |
 | `hs material price <file\|url\|id …>` | What `add` would cost for the same files, without adding anything |
 | `hs material ls --uploads` | Files you sent while editing (never read; `add <id>` reads one into the library) |
@@ -262,9 +278,11 @@ Offering footage with `--material` or `--folder` does not force Huasheng to use 
 | Command | What it does |
 | :--- | :--- |
 | `hs snapshot ls` | Points you can go back to |
+| `hs snapshot show <s-number>` | Look at a checkpoint without moving |
 | `hs snapshot undo` / `hs snapshot redo` / `hs snapshot goto <s-number>` | Move between them |
-| `hs export start [--watermark]` / `hs export status --task <id>` / `hs export get [--out <file>] [--timeout 300]` | Render and download the finished video |
-| `hs publish [--title …] [--tag …] [--cover …]` | The upload page link, and exactly what `--submit` would post |
+| `hs snapshot undo --run <run_id>` | Roll back everything one round of Huasheng's work did |
+| `hs export start [--watermark] [--ai-mark\|--no-ai-mark]` / `hs export status --task <id>` / `hs export get [--out <file>] [--timeout 300]` | Render and download the finished video. The "AI generated" corner mark follows your account default unless you say otherwise (`hs make --out` and `hs publish` take the same two flags) |
+| `hs publish [--title …] [--tag …] [--cover …] [--ai-label on\|off] [--set source=…]` | The upload page link, and exactly what `--submit` would post; `--ai-label` sets Bilibili's AI-content declaration (only allowed on videos narrated by a cloned voice), `source` is required for a reposted video |
 | `hs publish --submit [--title …] [--tag …] [--cover …]` | Post it to Bilibili — **this makes it public and cannot be undone** |
 | `hs mcp serve` | Run as an MCP server so an AI client can use Huasheng |
 | `hs upgrade` | Re-run the installer to get the latest release |
@@ -298,7 +316,7 @@ read-only command:
 Four steps cannot be taken back: `hs plan confirm`, `hs fast on` while queued, `hs project rm`,
 `hs publish --submit`. Most other steps are charged for the work Huasheng actually does, so they
 cannot be priced in advance; `hs chat cost` shows what a round came to afterwards, and
-`hs account` shows the balance.
+`hs account` shows the balance and your membership; `hs account bill` shows what the credits were spent on.
 
 An option `hs` does not know is an error, and nothing runs.
 
