@@ -50,9 +50,29 @@ try {
   }
 
   New-Item -ItemType Directory -Path $Dir -Force | Out-Null
-  Expand-Archive -Path "$Tmp\$Asset" -DestinationPath $Dir -Force
+  # A running hs.exe (an AI client keeps one open as its MCP server) cannot be overwritten,
+  # but Windows does allow renaming it. Move the old file aside, extract, then clean up;
+  # if the old file is still in use the cleanup is skipped and the next install removes it.
+  # The name is unique per install: a client that never restarted may still hold the previous
+  # .old file open, and renaming onto a locked file would fail.
+  $Exe = Join-Path $Dir "hs.exe"
+  $Old = $null
+  if (Test-Path $Exe) {
+    $Old = Join-Path $Dir ("hs.exe.old." + [System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))
+    Move-Item -Path $Exe -Destination $Old -Force
+  }
+  try {
+    Expand-Archive -Path "$Tmp\$Asset" -DestinationPath $Dir -Force
+  } catch {
+    # Extraction failed after the old binary was moved aside: put it back, then report.
+    # A failed upgrade must leave the previous working version in place, never nothing.
+    if ($Old -and (Test-Path $Old) -and -not (Test-Path $Exe)) { Move-Item -Path $Old -Destination $Exe -Force }
+    throw
+  }
+  Get-ChildItem -Path $Dir -Filter "hs.exe.old*" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
   Write-Host "Installed: $Dir\hs.exe"
   & "$Dir\hs.exe" --version
+  Write-Host "If an AI client (Claude, Codex) runs hs as an MCP server, restart it to load this version."
 
   # Only the user-level PATH is touched, never the machine-level one, so no administrator
   # rights are needed.

@@ -237,7 +237,8 @@ the MCP tools quote the price when asked.
   production and adding footage to the library, and those credits are not refunded. `hs` does what the
   command says and reports the cost; whether you are asked first is up to you, your script, or your AI client.
 - Scripts, narration recordings, and footage are uploaded to Huasheng for video creation; there is no separate telemetry
-  channel or background updater.
+  channel or background updater. The only other connection is a once-a-day check of the latest release number on GitHub,
+  which sends nothing but the hs version and can be turned off.
 
 ## Upgrading
 
@@ -245,8 +246,13 @@ the MCP tools quote the price when asked.
 hs upgrade
 ```
 
-This simply re-runs the installer. `hs` performs **no** update checks and **no** silent
-background updates.
+This simply re-runs the installer. `hs` never downloads or replaces itself on its own. Once a
+day, when you run a command in a terminal, it asks GitHub for the latest release number and prints
+one line if yours is older; set `HS_NO_UPDATE_CHECK=1` to turn that off.
+
+AI clients that run `hs mcp serve` keep the old process until they restart. After upgrading, start
+a new session in Claude Code or Codex, or quit and reopen Claude Desktop; until then the client is
+still on the old version. Upgrading while a client is running is safe on every platform.
 
 ## Feedback
 

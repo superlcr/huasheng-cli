@@ -285,7 +285,7 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 | `--cookie <session>` | 覆盖已保存的登录态,开发用 |
 
 `HS_COOKIE`、`HS_HOST`、`HS_CREDENTIALS_FILE`、`HS_STATE_FILE`、`HS_PID_REQUIRED`、
-`HS_RATE_LIMIT_WAIT` 可以从环境变量覆盖同样这些东西。
+`HS_RATE_LIMIT_WAIT` 可以从环境变量覆盖同样这些东西。`HS_NO_UPDATE_CHECK=1` 关掉每天一次的新版本检查。
 
 ## 积分与不可撤销的几步
 

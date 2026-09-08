@@ -19,7 +19,11 @@ Use `HS_CREDENTIALS_FILE` and `HS_STATE_FILE` to change these paths in CI or con
 ## Network and observable metadata
 
 `hs` connects only to Huasheng and the Bilibili sign-in/publishing endpoints required for your
-request. It has no separate telemetry channel and does not check for updates in the background.
+request. It has no separate telemetry channel. The one exception is an update check: at most once a
+day, when you run a command in a terminal or when an AI client starts `hs mcp serve`, it fetches the
+latest release number from `api.github.com`, sending only the hs version in `User-Agent`, and prints
+a line if a newer one exists. It never downloads or installs anything by itself.
+`HS_NO_UPDATE_CHECK=1` disables the check.
 Normal requests include version, CLI/MCP mode, platform, and command name in `User-Agent`; they do
 not include scripts, titles, pids, filenames, or footage contents. It looks like this:
 

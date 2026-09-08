@@ -297,7 +297,8 @@ Offering footage with `--material` or `--folder` does not force Huasheng to use 
 | `--cookie <session>` | Override the saved sign-in, for development |
 
 `HS_COOKIE`, `HS_HOST`, `HS_CREDENTIALS_FILE`, `HS_STATE_FILE`, `HS_PID_REQUIRED`, and
-`HS_RATE_LIMIT_WAIT` override the same things from the environment.
+`HS_RATE_LIMIT_WAIT` override the same things from the environment. `HS_NO_UPDATE_CHECK=1` turns off
+the once-a-day check for a newer release.
 
 ## Credits and one-way steps
 

@@ -96,3 +96,6 @@ if [ -f "${HS_CREDENTIALS_FILE:-$HOME/.hs/credentials.json}" ]; then
 else
   echo "Next:  hs auth login"
 fi
+# The running copy an AI client started (Claude Desktop, Codex, Claude Code) keeps executing the
+# old file — the rename above never touches it. The new version loads when the client restarts.
+echo "If an AI client runs hs as an MCP server, restart it to load this version."

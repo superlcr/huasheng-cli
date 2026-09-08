@@ -19,8 +19,10 @@ CI 或容器中可以用 `HS_CREDENTIALS_FILE` / `HS_STATE_FILE` 更改位置。
 
 ## 网络与可观测信息
 
-`hs` 只连接完成操作所需的花生服务和 B 站登录 / 投稿接口,没有独立遥测通道,也不做后台
-自动更新检查。正常请求的 `User-Agent` 会包含版本、CLI 或 MCP、平台和命令名,例如:
+`hs` 只连接完成操作所需的花生服务和 B 站登录 / 投稿接口,没有独立遥测通道。唯一的例外是版本检查:
+每天最多一次,在终端里跑命令、或 AI 客户端启动 `hs mcp serve` 时,它向 `api.github.com` 取最新 release
+的版本号(`User-Agent` 里只带 hs 自己的版本),有新版本就打一行提示。它从不自己下载或安装任何东西;
+`HS_NO_UPDATE_CHECK=1` 关掉这个检查。正常请求的 `User-Agent` 会包含版本、CLI 或 MCP、平台和命令名,例如:
 
 ```text
 hs/<版本号> (cli; darwin-arm64; project create)
