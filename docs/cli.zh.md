@@ -30,6 +30,12 @@ hs make --pid 123456789012345                         # 从上次停下的地方
 能从任何一步接着往下跑。`make` 中途停在任何地方,都会打印出**从这里接着走的那条完整命令** ——
 照抄那一行,别重跑你最初那条。
 
+`--max-questions` 只统计答题，不包含正常方案确认。`--max-continuations` 默认最多追加 3 次制作推进消息，在本机跨重启保留。达到 `CONTINUATION_LIMIT` 时保留项目，先检查对话，再明确提高上限；不会自动重建项目。
+
+`PLAN_CONTINUATION_UNCERTAIN` 表示推进请求可能已经生效。先用 `hs chat history --pid <pid>` 和 `hs project show --pid <pid>` 核对，不要盲目重复发送。排队等待和进度轮询不消耗推进次数。
+
+可选项目语言：`hs project create` 和新建模式的 `hs make --script/--audio` 支持 `--locale en-US` 或 `--locale zh-CN`；是否生效取决于服务版本，省略时使用默认语言。`hs make --pid` 沿用已有语言，不接受 `--locale`。MCP 的 `huasheng_create_project` 同样支持可选的 `locale` 字段。
+
 ## 一步一步来
 
 `hs make` 就是把下面这些步骤跑成一个循环。想先读分镜、改口播、调整观感再付钱,就自己走。
@@ -284,8 +290,8 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 | `--no-color` | 纯文本、不上色(`NO_COLOR` 同样有效) |
 | `--cookie <session>` | 覆盖已保存的登录态,开发用 |
 
-`HS_COOKIE`、`HS_HOST`、`HS_CREDENTIALS_FILE`、`HS_STATE_FILE`、`HS_PID_REQUIRED`、
-`HS_RATE_LIMIT_WAIT` 可以从环境变量覆盖同样这些东西。`HS_NO_UPDATE_CHECK=1` 关掉每天一次的新版本检查。
+`HS_COOKIE`、`HS_CREDENTIALS_FILE`、`HS_STATE_FILE`、`HS_PID_REQUIRED`、`HS_RATE_LIMIT_WAIT`
+可以从环境变量覆盖同样这些东西。`HS_NO_UPDATE_CHECK=1` 关掉每天一次的新版本检查。每个变量的说明见 `hs help env`。
 
 ## 积分与不可撤销的几步
 
@@ -311,5 +317,6 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 - `hs help <命令>` —— 单条命令的完整参考,含 JSON 结构与错误码
 - `hs help ids` —— 怎么指到一个视频、或指到某一镜
 - `hs help json`、`hs help errors`、`hs help batch` —— 脚本化的完整契约
+- `hs help env` —— 给 CI、容器与脚本用的环境变量
 - [脚本与自动化](automation.zh.md) —— JSON、退出码、批量控制
 - [登录、隐私与系统要求](security.zh.md) —— 凭据、联网范围、支持平台

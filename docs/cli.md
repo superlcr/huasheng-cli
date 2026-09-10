@@ -34,6 +34,12 @@ anything is charged, take the long way round below — `hs make --pid <pid>` pic
 wherever you stopped. If `make` stops anywhere, it prints the exact command that continues from
 that point — copy that line rather than re-running your original one.
 
+`--max-questions` limits answers only; storyboard approval does not consume it. `--max-continuations` defaults to 3 additional production prompts after approval, saved locally across restarts. At `CONTINUATION_LIMIT`, the project is preserved: inspect its conversation before explicitly raising the limit.
+
+`PLAN_CONTINUATION_UNCERTAIN` means a continuation may have been accepted. Inspect `hs chat history --pid <pid>` and `hs project show --pid <pid>`; do not blindly resend. Progress polling and queue waiting do not consume attempts.
+
+Optional project language: use `--locale en-US` or `--locale zh-CN` with `hs project create` or a new `hs make --script/--audio` request. Support depends on the service version. Omit for the default; `hs make --pid` resumes that language and does not accept `--locale`. MCP `huasheng_create_project` accepts the same optional `locale` field.
+
 ## The long way round: step by step
 
 `hs make` is those steps in a loop. Run them yourself when you want to read the storyboard,
@@ -296,9 +302,9 @@ Offering footage with `--material` or `--folder` does not force Huasheng to use 
 | `--no-color` | Plain text (`NO_COLOR` works too) |
 | `--cookie <session>` | Override the saved sign-in, for development |
 
-`HS_COOKIE`, `HS_HOST`, `HS_CREDENTIALS_FILE`, `HS_STATE_FILE`, `HS_PID_REQUIRED`, and
-`HS_RATE_LIMIT_WAIT` override the same things from the environment. `HS_NO_UPDATE_CHECK=1` turns off
-the once-a-day check for a newer release.
+`HS_COOKIE`, `HS_CREDENTIALS_FILE`, `HS_STATE_FILE`, `HS_PID_REQUIRED`, and `HS_RATE_LIMIT_WAIT`
+override the same things from the environment. `HS_NO_UPDATE_CHECK=1` turns off the once-a-day check
+for a newer release. `hs help env` explains each one.
 
 ## Credits and one-way steps
 
@@ -326,5 +332,6 @@ An option `hs` does not know is an error, and nothing runs.
 - `hs help <command>` — the full reference for one command, including its JSON shape and errors
 - `hs help ids` — how to point at a video or at one clip
 - `hs help json`, `hs help errors`, `hs help batch` — the scripting contract
+- `hs help env` — environment variables for CI, containers and scripts
 - [Scripting and automation](automation.md) — JSON, exit codes, batch control
 - [Sign-in, privacy, and requirements](security.md) — credentials, network boundaries, platforms
