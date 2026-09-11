@@ -13,6 +13,8 @@ the browser; `hs` never receives your password.
 | :--- | :--- | :--- |
 | `~/.hs/credentials.json` | Sign-in credentials (mode `0600`) | Shared by CLI and MCP clients; removed by `hs auth logout` |
 | `~/.hs/state.json` | Current pid and resume state | Contains no credentials; survives `hs auth logout` |
+| `~/.hs/state.json.workflow.sqlite` | Per-project recovery records for `hs make` and answers (which submission is pending or accepted, repair counts) | Contains no credentials; prevents duplicate submissions after a restart |
+| `~/.hs/state.json.requests.sqlite` | Request diagnostics: method, path, pid, run id, status and error codes, timing | Never stores request bodies, cookies or headers; keeps the latest 100,000 events; `HS_DIAGNOSTICS=0` turns it off. Stays on this machine |
 
 Use `HS_CREDENTIALS_FILE` and `HS_STATE_FILE` to change these paths in CI or containers.
 

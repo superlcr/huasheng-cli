@@ -14,6 +14,8 @@
 | :--- | :--- | :--- |
 | `~/.hs/credentials.json` | 登录凭据(权限 `0600`) | CLI 与所有 MCP 客户端共用;`hs auth logout` 会删除 |
 | `~/.hs/state.json` | 当前 pid、`hs make` 续跑参数 | 不含凭据;退出登录不会删除 |
+| `~/.hs/state.json.workflow.sqlite` | 各项目的恢复记录(`hs make` 与回答:哪次提交待确认/已收下、修复次数) | 不含凭据;用来在重启后避免重复提交 |
+| `~/.hs/state.json.requests.sqlite` | 请求诊断:方法、路径、pid、run id、状态码与错误码、耗时 | 从不记录请求正文、cookie 与请求头;只保留最近 10 万条;`HS_DIAGNOSTICS=0` 关闭。只留在本机 |
 
 CI 或容器中可以用 `HS_CREDENTIALS_FILE` / `HS_STATE_FILE` 更改位置。
 

@@ -30,10 +30,6 @@ hs make --pid 123456789012345                         # 从上次停下的地方
 能从任何一步接着往下跑。`make` 中途停在任何地方,都会打印出**从这里接着走的那条完整命令** ——
 照抄那一行,别重跑你最初那条。
 
-`--max-questions` 只统计答题，不包含正常方案确认。`--max-continuations` 默认最多追加 3 次制作推进消息，在本机跨重启保留。达到 `CONTINUATION_LIMIT` 时保留项目，先检查对话，再明确提高上限；不会自动重建项目。
-
-`PLAN_CONTINUATION_UNCERTAIN` 表示推进请求可能已经生效。先用 `hs chat history --pid <pid>` 和 `hs project show --pid <pid>` 核对，不要盲目重复发送。排队等待和进度轮询不消耗推进次数。
-
 可选项目语言：`hs project create` 和新建模式的 `hs make --script/--audio` 支持 `--locale en-US` 或 `--locale zh-CN`；是否生效取决于服务版本，省略时使用默认语言。`hs make --pid` 沿用已有语言，不接受 `--locale`。MCP 的 `huasheng_create_project` 同样支持可选的 `locale` 字段。
 
 ## 一步一步来
@@ -311,6 +307,8 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 `hs account` 看余额和会员状态;`hs account bill` 看米花哪了。
 
 `hs` 不认识的参数一律报错,什么都不跑。
+
+自动等待、恢复和防重复提交默认开启，无需调参。`--max-repairs` 是高级止损选项：限制自动修复次数。程序接入与兼容参数见[脚本与自动化](automation.zh.md)。
 
 ## 接下来看哪里
 
