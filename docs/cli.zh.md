@@ -5,8 +5,13 @@
 本页适合直接运行 `hs` 命令的人。第一次安装、登录以及 AI 客户端接入见[主 README](../README.zh.md);
 `--json`、退出码与批量任务见[脚本与自动化](automation.zh.md)。
 
-下面每条命令都接受 `--json`;`hs help <命令>` 会打印这条命令的完整参考 —— 参数、输出结构、
-错误码和例子。
+下面每条命令都接受 `--json`。`hs help` 展示主流程；`hs help commands` 是完整索引，
+包含素材、偏好、版本与维护。`hs help <命令>` 查看对应参考；`hs help make` 面向日常使用，
+`hs help make-advanced` 包含止损、恢复、JSON 输出和错误说明。
+参数只属于明确支持它的命令和动作。不认识、不适用、缺值或类型错误的参数会在执行前报错；
+不支持 `--preview` 的写命令不会忽略它后继续执行。
+
+终端程序的进度文案统一使用英文：正常进度使用默认文字色，成功用绿色，警告用黄色，失败用红色。创建项目和保存文件各显示一次，常规自动回答只显示摘要；需要处理时才展示恢复命令。`--json` 保留完整详情和操作数据。
 
 ## 最快的一条:一句命令
 
@@ -157,14 +162,14 @@ create → PLANNING
 | `hs project rm --pid <pid>` | 删掉一个 —— 立刻删,不可恢复 |
 | `hs use <pid>` / `hs use` / `hs use --clear` | 记住、查看、清除当前项目 |
 | `hs wait [--until any\|plan\|paused\|done] [--timeout 60]` | 一直等到需要你拿主意 |
-| `hs make … [--deadline <秒>] [--stall-timeout <秒>] [--detach]` | 以上全部一条命令跑完 —— 见上面的快速开始。`--deadline` 限制整条命令的总时长(默认不限),`--stall-timeout` 在这么久看不到任何变化时停下(默认 1800;`0` = 永不),`--detach` 视频一建好就返回。两种停下都退出码 `5` 并给出续跑命令 |
+| `hs make … [--deadline <秒>] [--stall-timeout <秒>] [--detach]` | 以上全部一条命令跑完 —— 见上面的快速开始。`--deadline` 限制整条命令的总时长(默认不限),`--stall-timeout` 在这么久看不到任何变化时停下(默认 1800;`0` = 永不;实时进度事件能延长它,但从上次可见变化算起最多到 3 倍;一轮修复没有完成任何分镜又失败不算变化;排队、等空位的时间不计入),`--detach` 视频一建好就返回。两种停下都退出码 `5` 并给出续跑命令 |
 
 ### 和花生对话
 
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs chat answer <回答\|@文件> [--no-wait]` | 回答它正在等的那个问题 |
-| `hs chat send [--clip N \| --animation N] [--attach <id\|文件\|地址> …] [--wait <秒>] <消息\|@文件>` | 随时提要求,也可明确指向一项;`--attach`(最多 8 个)把素材库里的素材递给它 —— 给文件或地址会先加进素材库,和 `hs material add` 一样计费。账号同时在跑的任务已满时,最多等 `--wait` 秒(默认 600)空出位置 |
+| `hs chat send [--clip N \| --animation N] [--attach <id\|文件\|地址> …] [--slot-wait <秒>] <消息\|@文件>` | 随时提要求,也可明确指向一项;`--attach`(最多 8 个)把素材库里的素材递给它 —— 给文件或地址会先加进素材库,和 `hs material add` 一样计费。账号同时在跑的任务已满时,最多等 `--slot-wait` 秒(默认 600)空出位置(不是 `--wait`,那是 `hs clip` 的) |
 | `hs chat cancel` / `hs chat retry` / `hs chat clear` | 中止当前这轮、重跑一次、清空对话 |
 | `hs chat history [--limit 20] [--before <run_id>]` | 之前说过什么、每一轮改了什么;`--before` 往前翻页 |
 | `hs chat watch [--timeout 300]` | 实时跟着看它在做什么 |
@@ -175,7 +180,7 @@ create → PLANNING
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs plan show [--cost]` | 分镜方案;加 `--cost` 连报价一起看 |
-| `hs plan confirm [--wait <秒>]` | 确认 —— **花积分,且不可撤销**。任务位置已满时最多等 `--wait` 秒(默认 600) |
+| `hs plan confirm [--slot-wait <秒>]` | 确认 —— **花积分,且不可撤销**。任务位置已满时最多等 `--slot-wait` 秒(默认 600) |
 | `hs fast` / `hs fast on` / `hs fast off` | 查看、加入、退出快速通道(`hs fast` 会说插队要花多少;已排上队之后 `on` 是单向的) |
 
 ### 编辑分镜

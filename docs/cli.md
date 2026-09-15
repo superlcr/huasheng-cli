@@ -6,8 +6,14 @@ This page is for people who run `hs` commands directly. For installation, sign-i
 setup, see the [main README](../README.md). For `--json`, exit codes, and batch jobs, see
 [Scripting and automation](automation.md).
 
-Every command here also accepts `--json`, and `hs help <command>` prints the full reference for
-one command — parameters, output shape, error codes, and examples.
+Every command here also accepts `--json`. `hs help` shows the main workflow; `hs help commands`
+is the complete index, including materials, preferences, versions, and maintenance.
+Use `hs help <command>` for its reference; `hs help make` covers everyday use and
+`hs help make-advanced` covers limits, recovery, JSON output, and errors.
+Options belong to their command and action. Unknown or inapplicable options, missing values,
+and invalid value types are rejected before execution; an unsupported `--preview` never runs a write.
+
+Progress messages use English: ordinary milestones use the terminal text colour, success uses green, warnings use yellow, and failures use red. Project creation and file saving appear once; routine auto-replies are summarized. Recovery commands appear when action is needed. `--json` retains full detail and operation data.
 
 ## Quick start: one command
 
@@ -165,14 +171,14 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | `hs project rm --pid <pid>` | Delete one — at once, and it cannot be undone |
 | `hs use <pid>` / `hs use` / `hs use --clear` | Remember, show, or forget the current video |
 | `hs wait [--until any\|plan\|paused\|done] [--timeout 60]` | Block until Huasheng needs a decision |
-| `hs make … [--deadline <s>] [--stall-timeout <s>] [--detach]` | All of the above in one command — see the quick start. `--deadline` caps the whole command (default: no limit), `--stall-timeout` stops after that long with no visible change (default 1800; `0` = never), `--detach` returns as soon as the video exists. Both stops exit `5` with a resume command |
+| `hs make … [--deadline <s>] [--stall-timeout <s>] [--detach]` | All of the above in one command — see the quick start. `--deadline` caps the whole command (default: no limit), `--stall-timeout` stops after that long with no visible change (default 1800; `0` = never; live progress events extend it to at most 3× since the last visible change; a repair round that ends failed again without finishing a scene is not a change; time queued or waiting for a slot is not counted), `--detach` returns as soon as the video exists. Both stops exit `5` with a resume command |
 
 ### Talking to Huasheng
 
 | Command | What it does |
 | :--- | :--- |
 | `hs chat answer <answer\|@file> [--no-wait]` | Answer the question it is waiting on |
-| `hs chat send [--clip N \| --animation N] [--attach <id\|file\|url> …] [--wait <s>] <message\|@file>` | Give a direction, optionally about one exact item; `--attach` (up to 8) hands it footage from your library — a file or URL is added to the library first, billed like `hs material add`. If the account already runs its maximum of tasks, waits up to `--wait` seconds (default 600) for a free slot |
+| `hs chat send [--clip N \| --animation N] [--attach <id\|file\|url> …] [--slot-wait <s>] <message\|@file>` | Give a direction, optionally about one exact item; `--attach` (up to 8) hands it footage from your library — a file or URL is added to the library first, billed like `hs material add`. If the account already runs its maximum of tasks, waits up to `--slot-wait` seconds (default 600) for a free slot (not `--wait`, which is for `hs clip`) |
 | `hs chat cancel` / `hs chat retry` / `hs chat clear` | Stop the current run, run it again, or clear the thread |
 | `hs chat history [--limit 20] [--before <run_id>]` | What has been said so far, and what each round changed; `--before` pages further back |
 | `hs chat watch [--timeout 300]` | Follow along while it works |
@@ -183,7 +189,7 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | Command | What it does |
 | :--- | :--- |
 | `hs plan show [--cost]` | The storyboard, and the price with `--cost` |
-| `hs plan confirm [--wait <s>]` | Approve it — **this spends credits and cannot be undone**. Waits up to `--wait` seconds (default 600) for a free task slot |
+| `hs plan confirm [--slot-wait <s>]` | Approve it — **this spends credits and cannot be undone**. Waits up to `--slot-wait` seconds (default 600) for a free task slot |
 | `hs fast` / `hs fast on` / `hs fast off` | Check, join, or leave the priority lane (`hs fast` shows what skipping costs; once queued, `on` is one-way) |
 
 ### Editing clips
