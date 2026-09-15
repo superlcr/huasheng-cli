@@ -7,33 +7,109 @@
 
 ## JSON 输出
 
-每条命令加 `--json` 即输出结构化对象,字段一律为 `snake_case`。
+每条命令加 `--json` 即输出结构化对象,字段一律为 `snake_case`。以下契约是稳定的:只会加字段,
+成功与失败的输出形状不变。
 
-成功时 stdout 直接是数据:
+**成功**:stdout 直接是数据本身(没有信封):
 
 ```console
 $ hs project show --json
 {"pid": 123456789012345, "state": "READY", ...}
 ```
 
-失败时 stdout 是统一错误信封:
+**失败**:退出码非 `0`,stderr 最后是一个 JSON 错误对象(`hs make` 在它之前可能写出以 `{"event":` 开头的单行事件):
 
 ```json
 {
   "error": {
-    "code": "INSUFFICIENT_POINTS",
+    "code": "RATE_LIMITED",
     "message": "...",
-    "retryable": false,
-    "suggested_action": "topup",
-    "next_command": "hs make --pid ... --mode mg"
+    "retryable": true,
+    "suggested_action": "retry",
+    "next_command": "hs make --pid ... --mode mg",
+    "retry_after_ms": 42000
   }
 }
 ```
 
 - `suggested_action` ∈ `login` · `topup` · `retry` · `null`
-- `next_command` 只在确实有一条可照抄命令时出现
-- 普通命令退出码:`0` 成功 · `1` 命令失败 · `2` 用法错误
-- `hs make` 退出码:`0` 成片 · `4` 失败 · `5` 达到兜底上限 · `6` 花生米不足
+- `next_command` 只在确实有一条可照抄命令时出现(pid 已填好)
+- `retry_after_ms`(`RATE_LIMITED`、`DAILY_LIMIT`、`RUN_CONCURRENCY_LIMIT`、可重试的 `PLAN_CONTINUATION_UNCERTAIN`)表示多久之后再试才有意义;`retry_at`(每日上限)是额度重置时刻,
+  ISO 8601 带 `+08:00`
+- 用法错误(没有这个命令 / 子命令 / 参数)同样是 JSON,code 为 `UNKNOWN_COMMAND` 或 `INVALID_INPUT`,退出码 `2`
+- 本地已知有新版本时,JSON 对象(成功与失败)会多一个 `update: {latest, command}` 字段;只加字段,
+  数组形状的输出不加
+
+### 退出码
+
+非 `0` 即失败,按 `!= 0` 判断的脚本不受影响。
+
+| 码 | 含义 | 该怎么办 |
+|---|---|---|
+| `0` | 成功 | |
+| `1` | 命令失败 | 看 `error.code` |
+| `2` | 用法错误,什么都没跑 | 改命令行 |
+| `4` | 仅 `hs make`:成片或导出失败,或下面没列出的其他失败 | 检查后 `resume` |
+| `5` | 仅 `hs make`:达到安全上限、`--deadline`、`--stall-timeout`,或并发槽位一直满 | 检查后 `resume` |
+| `6` | 花生米不足、需要会员、或今日额度用完(`INSUFFICIENT_POINTS`、`VIP_REQUIRED`、`DAILY_LIMIT`、`MEMBERSHIP_OR_LIMIT_REQUIRED`) | 充值 / 等到 `retry_at` |
+| `7` | 结果不明:`WRITE_OUTCOME_UNKNOWN`、`CREATE_OUTCOME_UNKNOWN`、`retryable: false` 的 `*_UNCERTAIN` | **先查状态再决定,别盲目重发** |
+| `8` | 需要人来登录:`NO_CREDENTIAL`、`CREDENTIAL_EXPIRED`、`NOT_LOGGED_IN`、`CSRF_FAILED` | `hs auth login` |
+| `9` | `ACCOUNT_RESTRICTED` 账号被风控限制 | 联系客服,重试没用 |
+| `75` | 临时失败:`RATE_LIMITED`、`NETWORK_ERROR`、`RUN_CONCURRENCY_LIMIT`、`STREAM_IDLE`、`DOWNLOAD_TIMEOUT`、`CLIP_BUSY`、`CALL_BUDGET_EXHAUSTED`、可重试的 `HTTP_ERROR`、`suggested_action: "retry"` 的 `NOT_LOGGED_IN`(hs 已替你续上会话)、`retryable: true` 的 `*_UNCERTAIN`(如 `PLAN_CONTINUATION_UNCERTAIN`) | 稍后原样再跑,有 `retry_after_ms` 就等够再跑 |
+
+其他错误码上的 `retryable: true`(如 `UPLOAD_FAILED`)表示再试可能有用,但退出码仍是 `1`(`hs make` 里是 `4`)。
+
+### `hs make`
+
+- 项目一建成,**stderr** 立刻输出一行
+  `{"event":"hs.created","version":1,"at":...,"pid":...,"resume":"hs make --pid ..."[,"recovered":true]}`
+  (总是输出,不依赖 `HS_PROGRESS=1`)。宿主超时杀掉进程时,跑 `resume` —— 绝不要重跑原命令,那会建第二个项目。
+  `recovered: true` 表示花生没确认创建,hs 在最近的项目里找回了它,没有再建一个。
+- stdout **只有**最终结果这一个 JSON(多行排版,请整体解析)。`hs make` 已经能报告某一步、而退出码非 `0` 时,
+  它还带 `error`(与 stderr 上的同一个对象)和 `resume`;导出失败时旧的 `export_error` 字符串仍保留,旁边多一个 `error`。
+- **`hs make` 在报告任何一步之前就停下时**(花生米、登录、创建结果不明、临时失败:退出码 `6`、`7`、`8`、`9`、`75`
+  以及早期的 `4`),stdout **为空**,`{error, pid, resume}` 只在 stderr 上。一律从 stderr 读 `error`。
+- `--json` 且 stderr 不是终端时,人读的过程行不输出:stderr 上是 `hs.created` 那一行(项目建成后)、
+  失败时的 `{error, pid, resume}`,以及 `HS_PROGRESS=1` 时的 `hs.progress` 行。事件都是以 `{"event":` 开头的单行;
+  错误对象总是最后写出。
+
+### 进度事件
+
+`HS_PROGRESS=1` 在 stderr 输出带版本号的 `{"event":"hs.progress","version":1,...}`:`hs make` 的进度,
+以及任意命令等账号额度超过 5 秒时的 `kind: "rate_limit_wait"`。不带 `--json` 时,这类等待(以及等空闲任务位置)改为打印一行人读提示;带 `--json` 时什么都不打。
+
+### 分镜编辑
+
+非终端或带 `--json` 时,分镜写操作默认最多等 30 秒看到落地(`--wait 0` 恢复「提交就回」)。
+`applied: false` 仍表示「还在跑」而不是失败,并附 `next_command`:一条只读的 `hs clip wait --pid ... --op ...`,用来稍后确认。
+`hs wait` 同时给出 `retry_after_s` 和 `retry_after_ms`(同一个值,分别以秒和毫秒计)。
+
+### 本版的破坏性变更
+
+只判断 `!= 0` 的脚本不受影响。按具体退出码分支、逐行读 `hs make` 输出、或在非终端里跑分镜编辑的脚本,请核对下面几点。
+
+**退出码。** 以前所有失败都是 `1`(`hs make` 里是 `4`;make 另有 `5` 表示 `REPAIR_STALLED` / `REPAIR_TIME_LIMIT`、`6` 表示花生米)。现在:
+
+| 错误 | 以前 | 现在 |
+|---|---|---|
+| `hs make` 以外的 `INSUFFICIENT_POINTS`、`VIP_REQUIRED`、`DAILY_LIMIT` | `1` | `6`(`hs make` 里不变) |
+| `MEMBERSHIP_OR_LIMIT_REQUIRED`(新) | — | `6` |
+| `NO_CREDENTIAL`、`CREDENTIAL_EXPIRED`、`NOT_LOGGED_IN`、`CSRF_FAILED` | `1` / make `4` | `8` |
+| `suggested_action: "retry"` 的 `NOT_LOGGED_IN` | `1` / make `4` | `75` |
+| `ACCOUNT_RESTRICTED` | `1` / make `4` | `9` |
+| `WRITE_OUTCOME_UNKNOWN`、`CREATE_OUTCOME_UNKNOWN`、`retryable: false` 的 `*_UNCERTAIN` | `1` / make `4` | `7` |
+| `RATE_LIMITED`、`NETWORK_ERROR`、`STREAM_IDLE`、`DOWNLOAD_TIMEOUT`、`CLIP_BUSY`、`CALL_BUDGET_EXHAUSTED`、可重试的 `HTTP_ERROR`、`retryable: true` 的 `*_UNCERTAIN` | `1` / make `4` | `75` |
+| `RUN_CONCURRENCY_LIMIT` | `1` / make `4` | `75` / make `5` |
+
+`hs make` 的 `4` 现在只剩上表没列出的失败。`0`、`2` 以及 `hs make` 的 `5`、`6` 含义不变。
+
+**非终端里分镜编辑会等。** 没有终端或带 `--json` 时,分镜编辑默认最多等 30 秒看到落地,不再提交就回;`--wait 0` 恢复旧行为。
+
+**`hs make` 在 stderr 上报「已建成」。** `hs.created` 那一行写在 stderr;stdout 仍然只有一个 JSON。pid 从那一行取,或取最终结果里的 `pid` / `resume`。
+
+**多出来的字段。** 本地已知有新版本时 JSON 对象会带 `update: {latest, command}`;`hs wait` 新增 `needs_action`、`still_running`、`retry_after_s`、`retry_after_ms` 和 `next_commands`。比对完整键集合的脚本要允许它们。
+
+**等待更久。** 命令等账号额度最多 `HS_RATE_LIMIT_WAIT` 秒(默认改为 900,原来 30)。`hs plan confirm` 和 `hs chat send` 最多等 `--wait` 秒(默认 600)空出任务位置。`hs make` 在 `--stall-timeout`(默认 1800 秒)内看不到任何变化就以退出码 `5` 停下;`hs wait` 遇到提问或待确认的分镜方案立刻返回,不管 `--until` 是什么。完整清单见发版说明。
 
 ## 三条控制流约定
 
@@ -41,7 +117,7 @@ $ hs project show --json
    排队中的 `fast on` · `publish --submit`):跑之前**先**跟人确认。`hs help account` 里那几条
    只读命令能看到每一步会做什么、花多少。还有两处虽然能从存档点回退、但花生米扣了不退:生产后的
    `settings voice`(`--cost` 先报价)和给文件或地址的 `material add` / `chat send --attach`(`material price` 先报价)。
-2. 分镜写操作返回 `applied: false` 表示仍在后台执行,不是失败。
+2. 分镜写操作返回 `applied: false` 表示仍在后台执行,不是失败;照抄它的 `next_command` 确认。
 3. `hs wait` 返回 `timed_out: true` 表示本轮等待结束,再次调用即可。
 
 完整字段与批量约定见 `hs help json`、`hs help errors`、`hs help batch`。

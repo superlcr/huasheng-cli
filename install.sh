@@ -17,12 +17,34 @@ INSTALL_DIR="${HS_INSTALL_DIR:-$HOME/.local/bin}"
 die() { echo "Error: $*" >&2; exit 1; }
 
 # ---- 1. Identify the platform ----
+# musl (Alpine and friends): the Linux build is linked against glibc and will not start there.
+# Say so up front instead of installing something that fails with a baffling "not found".
+# Not by looking for /lib/ld-musl-*: Debian/Ubuntu can have the musl package installed next to
+# glibc, and that file alone would wrongly turn them away. Ask the system's own ldd, and fall back to
+# the Alpine marker file when there is no ldd at all.
+is_musl() {
+  if command -v ldd >/dev/null 2>&1; then
+    ldd --version 2>&1 | grep -qi musl && return 0
+    return 1
+  fi
+  [ -e /etc/alpine-release ] && return 0
+  return 1
+}
+
 OS="$(uname -s)"; ARCH="$(uname -m)"
 case "$OS-$ARCH" in
   Darwin-arm64)  PLATFORM="darwin-arm64" ;;
   Darwin-x86_64) PLATFORM="darwin-x64" ;;
-  Linux-x86_64)  PLATFORM="linux-x64" ;;
-  *) die "There is no build for $OS-$ARCH yet. Download one manually: https://github.com/$REPO/releases/latest" ;;
+  Linux-x86_64|Linux-amd64)
+    if is_musl; then
+      die "This looks like musl-based Linux (Alpine, for example). The hs Linux build needs glibc 2.31 or later, and the npm package ships the same binary, so it will not run here either.
+Use a glibc-based image instead, such as debian:bookworm-slim or ubuntu:24.04."
+    fi
+    PLATFORM="linux-x64" ;;
+  Linux-aarch64|Linux-arm64)
+    die "There is no Linux ARM64 build of hs yet (the npm package does not have one either).
+Use an x64 machine, or run an x64 container, for example: docker run --platform linux/amd64 ..." ;;
+  *) die "There is no build for $OS-$ARCH yet. Builds exist for macOS (Apple Silicon, Intel), Linux x64 and Windows x64: https://github.com/$REPO/releases/latest" ;;
 esac
 ASSET="hs-$PLATFORM.tar.gz"
 

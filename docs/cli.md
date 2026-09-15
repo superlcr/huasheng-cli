@@ -133,8 +133,9 @@ create → PLANNING
 | `READY` | Finished | `hs export get` or `hs publish` |
 | `FAILED` | Something went wrong | `hs project show` explains why in `reason` |
 
-`hs wait` stops at `PAUSED`, `PLAN_READY`, `READY`, and `FAILED`. Every command also returns
-`next_actions`, which names what can happen from where you are.
+`hs wait` stops at `PAUSED`, `PLAN_READY`, `READY`, and `FAILED`. `hs project show` and `hs wait`
+also return `next_actions`, which names what can happen from where you are; other commands add a
+`next_command` to their `--json` output only when there is a command you can copy and run.
 
 ## Command reference
 
@@ -145,6 +146,8 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | Command | What it does |
 | :--- | :--- |
 | `hs auth login` | Sign in with your Bilibili account, in the browser |
+| `hs auth login --no-browser [--port <n>]` | Sign in from a machine without a browser (SSH, server, container): open the printed address on any device, then paste back the address the browser lands on |
+| `hs auth login --code <address\|code>` | Finish that sign-in in a separate command |
 | `hs auth status` | Whether the saved session still works |
 | `hs auth refresh` | Renew the session without signing in again |
 | `hs auth logout` | Forget the saved credentials |
@@ -162,14 +165,14 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | `hs project rm --pid <pid>` | Delete one — at once, and it cannot be undone |
 | `hs use <pid>` / `hs use` / `hs use --clear` | Remember, show, or forget the current video |
 | `hs wait [--until any\|plan\|paused\|done] [--timeout 60]` | Block until Huasheng needs a decision |
-| `hs make …` | All of the above in one command — see the quick start |
+| `hs make … [--deadline <s>] [--stall-timeout <s>] [--detach]` | All of the above in one command — see the quick start. `--deadline` caps the whole command (default: no limit), `--stall-timeout` stops after that long with no visible change (default 1800; `0` = never), `--detach` returns as soon as the video exists. Both stops exit `5` with a resume command |
 
 ### Talking to Huasheng
 
 | Command | What it does |
 | :--- | :--- |
 | `hs chat answer <answer\|@file> [--no-wait]` | Answer the question it is waiting on |
-| `hs chat send [--clip N \| --animation N] [--attach <id\|file\|url> …] <message\|@file>` | Give a direction, optionally about one exact item; `--attach` (up to 8) hands it footage from your library — a file or URL is added to the library first, billed like `hs material add` |
+| `hs chat send [--clip N \| --animation N] [--attach <id\|file\|url> …] [--wait <s>] <message\|@file>` | Give a direction, optionally about one exact item; `--attach` (up to 8) hands it footage from your library — a file or URL is added to the library first, billed like `hs material add`. If the account already runs its maximum of tasks, waits up to `--wait` seconds (default 600) for a free slot |
 | `hs chat cancel` / `hs chat retry` / `hs chat clear` | Stop the current run, run it again, or clear the thread |
 | `hs chat history [--limit 20] [--before <run_id>]` | What has been said so far, and what each round changed; `--before` pages further back |
 | `hs chat watch [--timeout 300]` | Follow along while it works |
@@ -180,7 +183,7 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | Command | What it does |
 | :--- | :--- |
 | `hs plan show [--cost]` | The storyboard, and the price with `--cost` |
-| `hs plan confirm` | Approve it — **this spends credits and cannot be undone** |
+| `hs plan confirm [--wait <s>]` | Approve it — **this spends credits and cannot be undone**. Waits up to `--wait` seconds (default 600) for a free task slot |
 | `hs fast` / `hs fast on` / `hs fast off` | Check, join, or leave the priority lane (`hs fast` shows what skipping costs; once queued, `on` is one-way) |
 
 ### Editing clips
@@ -201,6 +204,7 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | `hs clip pick --clip <#> --candidate <#\|uuid>` | Use one of them |
 | `hs clip pick --clip <#> --file <mp4\|mov\|jpg\|png\|url\|id> [--start <s>] [--crop x,y,w,h]` | Use your own footage for this clip instead — free; `--start` picks where in the file it begins |
 | `hs clip srt [--out <file>]` | Export subtitles as SRT |
+| `hs clip wait --op <kind> [--clip <id>] [--count <n>] [--candidate <uuid>] [--text "…"] [--timeout <s>]` | Read-only: confirm a clip edit has landed (`--text` with `--op edit`: wait for that narration) — copy the `next_command` an edit printed |
 
 ### Look and sound
 
@@ -287,7 +291,7 @@ Offering footage with `--material` or `--folder` does not force Huasheng to use 
 | `hs publish [--title …] [--tag …] [--cover …] [--ai-label on\|off] [--set source=…]` | The upload page link, and exactly what `--submit` would post; `--ai-label` sets Bilibili's AI-content declaration (only allowed on videos narrated by a cloned voice), `source` is required for a reposted video |
 | `hs publish --submit [--title …] [--tag …] [--cover …]` | Post it to Bilibili — **this makes it public and cannot be undone** |
 | `hs mcp serve` | Run as an MCP server so an AI client can use Huasheng |
-| `hs upgrade` | Re-run the installer to get the latest release |
+| `hs upgrade` | Update to the latest release: SHA256-verified download for installer builds; npm / pnpm / bun global installs use that package manager |
 
 ## Global options and environment
 
@@ -298,9 +302,17 @@ Offering footage with `--material` or `--folder` does not force Huasheng to use 
 | `--no-color` | Plain text (`NO_COLOR` works too) |
 | `--cookie <session>` | Override the saved sign-in, for development |
 
-`HS_COOKIE`, `HS_CREDENTIALS_FILE`, `HS_STATE_FILE`, `HS_PID_REQUIRED`, and `HS_RATE_LIMIT_WAIT`
-override the same things from the environment. `HS_NO_UPDATE_CHECK=1` turns off the once-a-day check
-for a newer release. `hs help env` explains each one.
+`HS_COOKIE`, `HS_CREDENTIALS_FILE`, `HS_STATE_FILE`, and `HS_PID_REQUIRED`
+override the same things from the environment.
+
+Huasheng limits how often one account may call some endpoints (for example ten new videos a minute).
+hs knows those limits and queues requests across every hs process on the machine so that each one is
+sent only when it will be accepted — a batch finishes as fast as the account allows instead of failing.
+`HS_RATE_LIMIT_WAIT=<seconds>` caps how long a command waits for its turn (default 900; `0` fails at
+once with `RATE_LIMITED`, whose `retry_after_ms` says when to try again). `HS_RATE_LIMITS=off` turns the
+built-in queueing off, for debugging. `HS_NO_UPDATE_CHECK=1` turns off the once-a-day check
+for a newer release. `HS_BASE_URL=<url>` points `hs upgrade` (and the install script) at a mirror of the
+release packages and `SHA256SUMS`. `hs help env` explains each one.
 
 ## Credits and one-way steps
 

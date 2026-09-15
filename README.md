@@ -93,6 +93,10 @@ hs account
 
 The CLI and every AI client share `~/.hs/credentials.json`; you do not sign in separately.
 
+No browser on that machine (SSH, a cloud server, a container)? Run `hs auth login --no-browser`, open
+the address it prints on any device, approve, and paste back the address the browser lands on (it
+starts with `http://127.0.0.1` and will not load — that is expected).
+
 
 ## Step 2: choose how you use it
 
@@ -246,9 +250,10 @@ the MCP tools quote the price when asked.
 hs upgrade
 ```
 
-This simply re-runs the installer. `hs` never downloads or replaces itself on its own. Once a
-day, when you run a command in a terminal, it asks GitHub for the latest release number and prints
-one line if yours is older; set `HS_NO_UPDATE_CHECK=1` to turn that off.
+For an installer build, this downloads the latest release, checks its SHA256, and swaps it in; for
+an npm install it runs `npm i -g @superlcr/hs@latest`. `hs` never downloads or replaces itself on
+its own. Once a day it asks for the latest release number and mentions it if yours is older; set
+`HS_NO_UPDATE_CHECK=1` to turn that off.
 
 AI clients that run `hs mcp serve` keep the old process until they restart. After upgrading, start
 a new session in Claude Code or Codex, or quit and reopen Claude Desktop; until then the client is

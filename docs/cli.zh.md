@@ -125,8 +125,9 @@ create → PLANNING
 | `READY` | 做完了 | `hs export get` 或 `hs publish` |
 | `FAILED` | 出错了 | `hs project show` 的 `reason` 会说明原因 |
 
-`hs wait` 会停在 `PAUSED`、`PLAN_READY`、`READY`、`FAILED` 四个状态。每条命令还会返回
-`next_actions`,直接告诉你从当前位置能做什么。
+`hs wait` 会停在 `PAUSED`、`PLAN_READY`、`READY`、`FAILED` 四个状态。`hs project show` 和 `hs wait`
+还会返回 `next_actions`,直接告诉你从当前位置能做什么;其他命令只有在有一条能照抄运行的命令时,
+才会在 `--json` 输出里带 `next_command`。
 
 ## 命令参考
 
@@ -137,6 +138,8 @@ create → PLANNING
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs auth login` | 用 B 站账号在浏览器里登录 |
+| `hs auth login --no-browser [--port <n>]` | 在没有浏览器的机器上登录(SSH、服务器、容器):在任意设备上打开打印出来的地址,授权后把浏览器跳到的地址粘回来 |
+| `hs auth login --code <地址\|code>` | 用另一条命令完成上面那次登录 |
 | `hs auth status` | 看保存的登录态还有没有效 |
 | `hs auth refresh` | 续期,不必重新登录 |
 | `hs auth logout` | 清掉本地凭据 |
@@ -154,14 +157,14 @@ create → PLANNING
 | `hs project rm --pid <pid>` | 删掉一个 —— 立刻删,不可恢复 |
 | `hs use <pid>` / `hs use` / `hs use --clear` | 记住、查看、清除当前项目 |
 | `hs wait [--until any\|plan\|paused\|done] [--timeout 60]` | 一直等到需要你拿主意 |
-| `hs make …` | 以上全部一条命令跑完 —— 见上面的快速开始 |
+| `hs make … [--deadline <秒>] [--stall-timeout <秒>] [--detach]` | 以上全部一条命令跑完 —— 见上面的快速开始。`--deadline` 限制整条命令的总时长(默认不限),`--stall-timeout` 在这么久看不到任何变化时停下(默认 1800;`0` = 永不),`--detach` 视频一建好就返回。两种停下都退出码 `5` 并给出续跑命令 |
 
 ### 和花生对话
 
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs chat answer <回答\|@文件> [--no-wait]` | 回答它正在等的那个问题 |
-| `hs chat send [--clip N \| --animation N] [--attach <id\|文件\|地址> …] <消息\|@文件>` | 随时提要求,也可明确指向一项;`--attach`(最多 8 个)把素材库里的素材递给它 —— 给文件或地址会先加进素材库,和 `hs material add` 一样计费 |
+| `hs chat send [--clip N \| --animation N] [--attach <id\|文件\|地址> …] [--wait <秒>] <消息\|@文件>` | 随时提要求,也可明确指向一项;`--attach`(最多 8 个)把素材库里的素材递给它 —— 给文件或地址会先加进素材库,和 `hs material add` 一样计费。账号同时在跑的任务已满时,最多等 `--wait` 秒(默认 600)空出位置 |
 | `hs chat cancel` / `hs chat retry` / `hs chat clear` | 中止当前这轮、重跑一次、清空对话 |
 | `hs chat history [--limit 20] [--before <run_id>]` | 之前说过什么、每一轮改了什么;`--before` 往前翻页 |
 | `hs chat watch [--timeout 300]` | 实时跟着看它在做什么 |
@@ -172,7 +175,7 @@ create → PLANNING
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs plan show [--cost]` | 分镜方案;加 `--cost` 连报价一起看 |
-| `hs plan confirm` | 确认 —— **花积分,且不可撤销** |
+| `hs plan confirm [--wait <秒>]` | 确认 —— **花积分,且不可撤销**。任务位置已满时最多等 `--wait` 秒(默认 600) |
 | `hs fast` / `hs fast on` / `hs fast off` | 查看、加入、退出快速通道(`hs fast` 会说插队要花多少;已排上队之后 `on` 是单向的) |
 
 ### 编辑分镜
@@ -193,6 +196,7 @@ create → PLANNING
 | `hs clip pick --clip <#> --candidate <#\|uuid>` | 换成其中一个 |
 | `hs clip pick --clip <#> --file <mp4\|mov\|jpg\|png\|地址\|id> [--start <秒>] [--crop x,y,w,h]` | 改用你自己的画面 —— 免费;`--start` 指定从文件第几秒开始 |
 | `hs clip srt [--out <文件>]` | 导出 SRT 字幕 |
+| `hs clip wait --op <类型> [--clip <id>] [--count <n>] [--candidate <uuid>] [--text "…"] [--timeout <秒>]` | 只读:确认分镜改动已经落地(`--op edit` 配 `--text`:等到这段口播落地)—— 照抄编辑命令给出的 `next_command` |
 
 ### 观感与声音
 
@@ -275,7 +279,7 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 | `hs publish [--title …] [--tag …] [--cover …] [--ai-label on\|off] [--set source=…]` | 投稿页链接,以及 `--submit` 会投出去的整份稿件;`--ai-label` 设 B 站的「AI 生成内容」声明(只有克隆音色的视频能改),转载必须给 `source` |
 | `hs publish --submit [--title …] [--tag …] [--cover …]` | 投稿到 B 站 —— **这一步会公开,且不可撤销** |
 | `hs mcp serve` | 以 MCP server 方式运行,给 AI 客户端用 |
-| `hs upgrade` | 重跑一次安装器,升到最新版 |
+| `hs upgrade` | 升到最新版:安装器装的会下载并校验 SHA256,npm / pnpm / bun 全局安装的交给对应的包管理器 |
 
 ## 全局参数与环境变量
 
@@ -286,8 +290,13 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 | `--no-color` | 纯文本、不上色(`NO_COLOR` 同样有效) |
 | `--cookie <session>` | 覆盖已保存的登录态,开发用 |
 
-`HS_COOKIE`、`HS_CREDENTIALS_FILE`、`HS_STATE_FILE`、`HS_PID_REQUIRED`、`HS_RATE_LIMIT_WAIT`
-可以从环境变量覆盖同样这些东西。`HS_NO_UPDATE_CHECK=1` 关掉每天一次的新版本检查。每个变量的说明见 `hs help env`。
+`HS_COOKIE`、`HS_CREDENTIALS_FILE`、`HS_STATE_FILE`、`HS_PID_REQUIRED`
+可以从环境变量覆盖同样这些东西。
+
+花生对同一个账号调用部分接口的频率有限制(例如每分钟最多新建 10 个视频)。hs 知道这些限制,
+会在本机所有 hs 进程之间排队,每个请求只在一定能被接受时才发出 —— 批量任务按账号允许的最快速度跑完,
+而不是失败。`HS_RATE_LIMIT_WAIT=<秒>` 限制一条命令最多等多久(默认 900;`0` 表示不等,直接报
+`RATE_LIMITED`,其中 `retry_after_ms` 说明多久后再试)。`HS_RATE_LIMITS=off` 关掉内置排队,调试用。`HS_NO_UPDATE_CHECK=1` 关掉每天一次的新版本检查。`HS_BASE_URL=<地址>` 让 `hs upgrade`(以及安装脚本)从镜像下载安装包和 `SHA256SUMS`。每个变量的说明见 `hs help env`。
 
 ## 积分与不可撤销的几步
 
