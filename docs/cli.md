@@ -111,7 +111,7 @@ hs settings subtitle-size 42
 **7. Deliver it.**
 
 ```bash
-hs export get --out ./out.mp4                # download the finished video
+hs export --out ./out.mp4                    # download the finished video
 hs publish --title "West Lake"               # shows exactly what would be posted; posts nothing
 hs publish --submit --title "West Lake"      # post it to Bilibili — this is public
 ```
@@ -136,7 +136,7 @@ create → PLANNING
 | `PAUSED` | **It asked you something** | `hs chat answer "…"` — but if it is asking you to approve the plan, `hs plan confirm` |
 | `PLAN_READY` | Storyboard ready; nothing has been charged yet | `hs plan show --cost`, then `hs plan confirm` |
 | `PRODUCING` | Rendering clip by clip | Wait, or edit clips that are already done |
-| `READY` | Finished | `hs export get` or `hs publish` |
+| `READY` | Finished | `hs export` or `hs publish` |
 | `FAILED` | Something went wrong | `hs project show` explains why in `reason` |
 
 `hs wait` stops at `PAUSED`, `PLAN_READY`, `READY`, and `FAILED`. `hs project show` and `hs wait`
@@ -170,18 +170,18 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | `hs project ls [--limit 20]` | Your recent videos |
 | `hs project rm --pid <pid>` | Delete one — at once, and it cannot be undone |
 | `hs use <pid>` / `hs use` / `hs use --clear` | Remember, show, or forget the current video |
-| `hs wait [--until any\|plan\|paused\|done] [--timeout 60]` | Block until Huasheng needs a decision |
-| `hs make … [--deadline <s>] [--stall-timeout <s>] [--detach]` | All of the above in one command — see the quick start. `--deadline` caps the whole command (default: no limit), `--stall-timeout` stops after that long with no visible change (default 1800; `0` = never; live progress events extend it to at most 3× since the last visible change; a repair round that ends failed again without finishing a scene is not a change; time queued or waiting for a slot is not counted), `--detach` returns as soon as the video exists. Both stops exit `5` with a resume command |
+| `hs wait [--deadline <seconds>]` | Wait for a decision, completion or failure. At the deadline, a successfully read unfinished state returns `timed_out: true`, `still_running: true`, exit 0; query failures remain errors |
+| `hs make … [--deadline <s>] [--stall-timeout <s>]` | All of the above in one command — see the quick start. `--deadline` caps the whole command (default: no limit), `--stall-timeout` stops after that long with no visible change (default 1800; `0` = never; live progress events extend it to at most 3× since the last visible change; a repair round that ends failed again without finishing a scene is not a change; time queued or waiting for a slot is not counted) Both stops exit `5` with a resume command |
 
 ### Talking to Huasheng
 
 | Command | What it does |
 | :--- | :--- |
-| `hs chat answer <answer\|@file> [--no-wait]` | Answer the question it is waiting on |
-| `hs chat send [--clip N \| --animation N] [--attach <id\|file\|url> …] [--slot-wait <s>] <message\|@file>` | Give a direction, optionally about one exact item; `--attach` (up to 8) hands it footage from your library — a file or URL is added to the library first, billed like `hs material add`. If the account already runs its maximum of tasks, waits up to `--slot-wait` seconds (default 600) for a free slot (not `--wait`, which is for `hs clip`) |
+| `hs chat answer <answer\|@file>` | Answer the question it is waiting on |
+| `hs chat send [--clip N \| --animation N] [--attach <id\|file\|url> …] [--deadline <s>] <message\|@file>` | Give a direction, optionally about one exact item; `--attach` (up to 8) hands it footage from your library — a file or URL is added to the library first, billed like `hs material add`. The total `--deadline` includes uploads and waiting for a task slot; default 0 means unlimited |
 | `hs chat cancel` / `hs chat retry` / `hs chat clear` | Stop the current run, run it again, or clear the thread |
 | `hs chat history [--limit 20] [--before <run_id>]` | What has been said so far, and what each round changed; `--before` pages further back |
-| `hs chat watch [--timeout 300]` | Follow along while it works |
+| `hs chat watch [--deadline <seconds>]` | Follow along while it works |
 | `hs chat cost [--run <run_id>]` | What one run cost |
 
 ### Storyboard and production
@@ -189,7 +189,7 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | Command | What it does |
 | :--- | :--- |
 | `hs plan show [--cost]` | The storyboard, and the price with `--cost` |
-| `hs plan confirm [--slot-wait <s>]` | Approve it — **this spends credits and cannot be undone**. Waits up to `--slot-wait` seconds (default 600) for a free task slot |
+| `hs plan confirm [--deadline <s>]` | Approve it — **this spends credits and cannot be undone**. The total `--deadline` includes waiting for a task slot and safely handing off the approved plan; default 0 means unlimited |
 | `hs fast` / `hs fast on` / `hs fast off` | Check, join, or leave the priority lane (`hs fast` shows what skipping costs; once queued, `on` is one-way) |
 
 ### Editing clips
@@ -205,12 +205,12 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | `hs clip split --clip <#> --at <line>` | Split after a line of narration |
 | `hs clip merge --clip <#> --into <#>` | Merge two clips |
 | `hs clip retry --clip <#>` | Rebuild a clip that failed |
-| `hs clip dub --clip <#> [--text "…"] [--undo] [--cancel]` | Re-record the voice for one clip; `--text` re-records only the words that differ; `--cancel` stops one still being generated |
+| `hs clip dub --clip <#> [--text "…"] [--undo] [--cancel]` | Re-record the voice for one clip; `--text` re-records only the words that differ; `--cancel` discards a generating or ready preview without changing applied audio |
 | `hs clip candidates --clip <#> [--like <uuid>] [--captions]` | Other footage for this clip; `--captions` adds what each piece shows |
 | `hs clip pick --clip <#> --candidate <#\|uuid>` | Use one of them |
 | `hs clip pick --clip <#> --file <mp4\|mov\|jpg\|png\|url\|id> [--start <s>] [--crop x,y,w,h]` | Use your own footage for this clip instead — free; `--start` picks where in the file it begins |
 | `hs clip srt [--out <file>]` | Export subtitles as SRT |
-| `hs clip wait --op <kind> [--clip <id>] [--count <n>] [--candidate <uuid>] [--text "…"] [--timeout <s>]` | Read-only: confirm a clip edit has landed (`--text` with `--op edit`: wait for that narration) — copy the `next_command` an edit printed |
+| `hs clip wait --op <kind> [--clip <id>] [--count <n>] [--candidate <uuid>] [--text "…"] [--deadline <s>]` | Read-only: confirm a clip edit has landed (`--text` with `--op edit`: wait for that narration) — copy the `next_command` an edit printed |
 
 ### Look and sound
 
@@ -238,7 +238,7 @@ current list.
 video, billed per character. Credits spent are not refunded. After completion, the edit can be
 undone if its checkpoint is available; inspect `hs snapshot ls` first. `hs settings voice <id> --cost` quotes it
 without changing anything; without `--cost` hs does it and waits until every clip is done
-(`--no-wait` returns at once, and `hs project show` reports `voice_changing` until it finishes).
+(`--no-wait` returns at once, then `hs wait --op voice` checks recording and rendering without changing the voice again).
 Videos narrated by your own recording have no voice to change.
 
 ```bash
@@ -293,7 +293,9 @@ Offering footage with `--material` or `--folder` does not force Huasheng to use 
 | `hs snapshot show <s-number>` | Look at a checkpoint without moving |
 | `hs snapshot undo` / `hs snapshot redo` / `hs snapshot goto <s-number>` | Move between them |
 | `hs snapshot undo --run <run_id>` | Roll back everything one round of Huasheng's work did |
-| `hs export start [--watermark] [--ai-mark\|--no-ai-mark]` / `hs export status --task <id>` / `hs export get [--out <file>] [--timeout 300]` | Render and download the finished video. The "AI generated" corner mark follows your account default unless you say otherwise (`hs make --out` and `hs publish` take the same two flags) |
+| `hs export [--out <file>] [--task <id>] [--deadline <seconds>] [--watermark] [--ai-mark\|--no-ai-mark]` | Wait for rendering and download. No time limit by default. `--task` resumes the same export |
+| `hs export --no-wait [--out <file>]` | Submit and return a task ID immediately; no download yet. `--out` is retained in the resume command |
+| `hs export status --task <id>` | Read progress and the finished URL; never start a task or download a file |
 | `hs publish [--title …] [--tag …] [--cover …] [--ai-label on\|off] [--set source=…]` | The upload page link, and exactly what `--submit` would post; `--ai-label` sets Bilibili's AI-content declaration (only allowed on videos narrated by a cloned voice), `source` is required for a reposted video |
 | `hs publish --submit [--title …] [--tag …] [--cover …]` | Post it to Bilibili — **this makes it public and cannot be undone** |
 | `hs mcp serve` | Run as an MCP server so an AI client can use Huasheng |
@@ -351,3 +353,13 @@ Waiting, recovery and duplicate-submission protection work by default. `--max-re
 - `hs help env` — environment variables for CI, containers and scripts
 - [Scripting and automation](automation.md) — JSON, exit codes, batch control
 - [Sign-in, privacy, and requirements](security.md) — credentials, network boundaries, platforms
+
+## Execution and recovery
+
+Remote business commands accept `--deadline <seconds>`, default 0 (unlimited). Uploads, task slots, requests, polling and downloads share that budget. TTY, pipes and JSON never change execution. Local commands, upgrade and the persistent `mcp serve` do not accept it.
+
+Clip edit/add/rm/split/merge/pick/retry wait until applied by default. `--no-wait` returns after acceptance with a read-only check command. `hs clip wait --deadline 60` returns normally when a successfully checked change remains pending; failed reads remain errors.
+
+Re-recording waits for generation and application. Use the emitted `hs clip dub --task <id>` to finish applying the original task without generating another or overwriting a changed clip. Speed previews resume with `hs settings speed <rate> --preview --clip <id> --task <id>`. Own-footage recovery uses the registered material ID and preserves cropping and start position.
+
+Publish recovery reuses the export and preserves draft options, but omits `--submit`. A successful `publish --submit` means the platform accepted the post for review.

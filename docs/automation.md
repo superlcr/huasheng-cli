@@ -2,6 +2,8 @@
 
 [简体中文](automation.zh.md) · **English**
 
+`hs wait --deadline 60 --json` is suitable for a bounded polling loop. If a state was read successfully, an unfinished video at the deadline is a normal result (`timed_out: true`, `still_running: true`, exit 0). Missing state and query failures remain errors. Choose a deadline shorter than your AI client's command limit.
+
 This page covers stable use from scripts, CI, and batch jobs. For interactive use, see the
 [main README](../README.md).
 
@@ -53,12 +55,14 @@ Anything other than `0` is a failure, so `!= 0` checks keep working.
 | `1` | the command failed | read `error.code` |
 | `2` | usage error, nothing was run | fix the command line |
 | `4` | `hs make` only: the video or export failed, or anything not listed here | inspect; `resume` |
-| `5` | `hs make` only: safety limit, `--deadline`, `--stall-timeout`, or the running-task limit stayed full | inspect, then `resume` |
+| `5` | make/export reached `--deadline`, or wait could not obtain a state before it; also make safety limits and stalls | inspect, then `resume` |
+| `130` | Ctrl-C stopped local waiting; press again to force exit. No server cancellation was sent | use the recorded task ID and resume command |
+| `143` | SIGTERM stopped local waiting; no server cancellation was sent | use the recorded task ID and resume command |
 | `6` | out of credits, membership needed, or today's limit used up (`INSUFFICIENT_POINTS`, `VIP_REQUIRED`, `DAILY_LIMIT`, `MEMBERSHIP_OR_LIMIT_REQUIRED`) | top up / wait for `retry_at` |
 | `7` | result unknown: `WRITE_OUTCOME_UNKNOWN`, `CREATE_OUTCOME_UNKNOWN`, `*_UNCERTAIN` with `retryable: false` | **check state before retrying** |
 | `8` | a person has to sign in: `NO_CREDENTIAL`, `CREDENTIAL_EXPIRED`, `NOT_LOGGED_IN`, `CSRF_FAILED` | `hs auth login` |
 | `9` | `ACCOUNT_RESTRICTED` | contact support; retrying will not help |
-| `75` | temporary: `RATE_LIMITED`, `NETWORK_ERROR`, `RUN_CONCURRENCY_LIMIT`, `STREAM_IDLE`, `DOWNLOAD_TIMEOUT`, `CLIP_BUSY`, `CALL_BUDGET_EXHAUSTED`, a retryable `HTTP_ERROR`, `NOT_LOGGED_IN` with `suggested_action: "retry"` (hs already renewed the session), `*_UNCERTAIN` with `retryable: true` (e.g. `PLAN_CONTINUATION_UNCERTAIN`) | run the same command later, after `retry_after_ms` when given |
+| `75` | temporary: `RATE_LIMITED`, `NETWORK_ERROR`, `RUN_CONCURRENCY_LIMIT`, `STREAM_IDLE`, `STREAM_INTERRUPTED`, `DOWNLOAD_TIMEOUT`, `CLIP_BUSY`, `CALL_BUDGET_EXHAUSTED`, a retryable `HTTP_ERROR`, `NOT_LOGGED_IN` with `suggested_action: "retry"` (hs already renewed the session), `*_UNCERTAIN` with `retryable: true` (e.g. `PLAN_CONTINUATION_UNCERTAIN`) | run the same command later, after `retry_after_ms` when given |
 
 `retryable: true` on any other code (for example `UPLOAD_FAILED` or `URL_UNREACHABLE`) means trying again may help, but
 its exit code stays `1` (`4` in `hs make`).
@@ -91,8 +95,7 @@ line instead; with `--json` they print nothing.
 
 ### Clip edits
 
-Without a terminal or with `--json`, clip edits wait up to 30 seconds for the change to land
-(`--wait 0` restores submit-and-return). `applied: false` still means "running", not failed, and comes with
+Clip edits wait until applied in every output mode; `--no-wait` returns after acceptance. `applied: false` still means "running", not failed, and comes with
 `next_command`: a read-only `hs clip wait --pid ... --op ...` that confirms it later.
 `hs wait` reports `retry_after_ms` (milliseconds, non-zero while queued) and `next_commands`, a list in the order to run
 them: empty when there is nothing to run, one command for a question or to keep waiting, and two for a storyboard
@@ -115,16 +118,14 @@ Anything that only checks `!= 0` keeps working. Scripts that branch on specific 
 | `NOT_LOGGED_IN` with `suggested_action: "retry"` | `1` / make `4` | `75` |
 | `ACCOUNT_RESTRICTED` | `1` / make `4` | `9` |
 | `WRITE_OUTCOME_UNKNOWN`, `CREATE_OUTCOME_UNKNOWN`, `*_UNCERTAIN` with `retryable: false` | `1` / make `4` | `7` |
-| `RATE_LIMITED`, `NETWORK_ERROR`, `STREAM_IDLE`, `DOWNLOAD_TIMEOUT`, `CLIP_BUSY`, `CALL_BUDGET_EXHAUSTED`, retryable `HTTP_ERROR`, `*_UNCERTAIN` with `retryable: true` | `1` / make `4` | `75` |
+| `RATE_LIMITED`, `NETWORK_ERROR`, `STREAM_IDLE`, `STREAM_INTERRUPTED`, `DOWNLOAD_TIMEOUT`, `CLIP_BUSY`, `CALL_BUDGET_EXHAUSTED`, retryable `HTTP_ERROR`, `*_UNCERTAIN` with `retryable: true` | `1` / make `4` | `75` |
 | `RUN_CONCURRENCY_LIMIT` | `1` / make `4` | `75` / make `5` |
 | `REPAIR_STALLED`, `REPAIR_TIME_LIMIT` (make) | `5` | no longer returned: those stops are now `MAKE_STALLED` (`5`) |
 
 `4` in `hs make` now only covers failures not listed above. `0`, `2`, and `hs make`'s `5` / `6`
 keep their meaning.
 
-**Clip edits wait when there is no terminal.** Without a terminal or with `--json`, clip edits now
-wait up to 30 seconds for the change to land instead of returning at once. `--wait 0` restores the
-old behaviour.
+**Clip edits use one policy in every output mode.** Default: wait until applied. Use `--no-wait` to return after acceptance, or `--deadline` to bound total execution.
 
 **`hs make` announces the project on standard error.** The `hs.created` line is written to
 standard error; standard output is still exactly one JSON document. Take the pid from that line, or
@@ -135,12 +136,11 @@ locally; `hs wait` adds `needs_action`, `still_running`, `retry_after_ms` and
 `next_commands`. Scripts that compare the full key set should allow them.
 
 **Longer waits.** Commands wait for the account's allowance for up to `HS_RATE_LIMIT_WAIT` seconds
-(default now 900, was 30). `hs plan confirm` and `hs chat send` wait up to `--slot-wait` seconds (default
-600) for a free task slot (`--wait` is `hs clip`'s "wait for the change to land"; these two commands reject it).
+(default now 900, was 30). `hs plan confirm` and `hs chat send` include slot waiting in the total `--deadline` budget (default 0: unlimited).
 `hs make` stops with exit code `5` (`MAKE_STALLED`) after `--stall-timeout` (default 1800 seconds) with no visible
 change — scene counts, state, run. Live progress events extend that line, but at most to 3× `--stall-timeout` since
 the last visible change; and `hs wait` returns at once when a question or a storyboard needs
-you, whatever `--until` says. See the release notes for the full list.
+you, or when the video finishes or fails. See the release notes for the full list.
 
 ## Control-flow rules
 
@@ -172,8 +172,18 @@ Defaults need no tuning. These interfaces remain available for automation and ex
 
 `REPAIR_CONTINUATION_UNCERTAIN` means a repair was dispatched but progress is unconfirmed. The CLI preserves its attempt budget across restarts and will not submit another repair for the same unresolved run. Inspect project status and chat history before intervening. If the conversation shows no new round after the failure, the repair never reached Huasheng (for example, hs was killed right before sending it): send it yourself with the `hs chat send --pid <pid> "…"` command quoted in the error message, then resume `hs make`. The new round releases the record.
 
-`hs make` stops for exactly these reasons, each with exit code `5` and a resume command: the spending caps `--max-repairs` (automatic repairs, default 3, `REPAIR_LIMIT`), `--max-questions` (`QUESTION_LIMIT`) and `--max-continuations` (`CONTINUATION_LIMIT`), and the time limits `--stall-timeout` (`MAKE_STALLED`) and `--deadline` (`MAKE_DEADLINE`). Counts survive restarts. A repair round that ends failed again without finishing a scene does not count as a change (a scene finishing during the round does), so repairs that keep failing stop with `MAKE_STALLED` once `--stall-timeout` passes, or earlier at `--max-repairs`. Time spent queued or waiting for a free task slot is not counted. `--max-stalled-repairs` and `--max-repair-seconds` from 0.5.4 are still accepted, so older resume commands keep working, but they have no effect (hs prints a note without `--json`); `REPAIR_STALLED` and `REPAIR_TIME_LIMIT` are no longer returned.
+`hs make` stops for exactly these reasons, each with exit code `5` and a resume command: the spending caps `--max-repairs` (automatic repairs, default 3, `REPAIR_LIMIT`), `--max-questions` (`QUESTION_LIMIT`) and `--max-continuations` (`CONTINUATION_LIMIT`), and the time limits `--stall-timeout` (`MAKE_STALLED`) and `--deadline` (`DEADLINE_EXCEEDED`). Counts survive restarts. A repair round that ends failed again without finishing a scene does not count as a change (a scene finishing during the round does), so repairs that keep failing stop with `MAKE_STALLED` once `--stall-timeout` passes, or earlier at `--max-repairs`. Time spent queued or waiting for a free task slot is not counted. The no-op `--max-stalled-repairs` and `--max-repair-seconds` flags are removed; `REPAIR_STALLED` and `REPAIR_TIME_LIMIT` are no longer returned.
 
 `HS_PROGRESS=1 hs make ... --json` emits versioned `hs.progress` JSON events on stderr while stdout remains one final result. These events report observed progress; they are not a server push subscription.
 
 `REPAIR_CONTINUATION_UNCERTAIN` preserves an unverified repair and includes a conversation inspection command. Explicit account or quota rejections release it for a later retry; a lost response never authorizes a second repair. Answers differ: Huasheng accepts at most one answer per question batch, so after a lost response the next attempt sends the answer again. `ANSWER_CONTINUATION_UNCERTAIN` means acceptance could not be verified; a refusal alone does not prove that an earlier answer was accepted. Inspect the conversation and wait before deciding whether to answer again. `hs make` keeps waiting in that case instead of stopping. `REPAIR_LIMIT` and `MAKE_STALLED` exit with code 5 and print a resume command (after `REPAIR_LIMIT` it names a higher `--max-repairs`). Inspect the project before using it. Successful completion clears the repair recovery window.
+
+## MCP recording recovery
+
+MCP calls are bounded. For `huasheng_edit_clip` with `action: "redub"`, retain `action.operation.id` and poll `huasheng_wait_for_action`. A ready recording is not yet applied: when `action.next_call` is present, call the indicated tool with its exact arguments. This uses `operation_id` to apply the existing recording, without generating another one. The workbench performs this continuation automatically. Waiting never applies audio. A lost apply reply retains the operation ID for read-only verification; do not start another recording to retry it.
+
+For CLI recording recovery, `hs clip wait --pid PID --clip CLIP --op dub` is read-only. A generated recording that is not applied returns `needs_action: true`, `done: false`, and a `hs clip dub --task <id>` command when a local task exists; otherwise it asks you to inspect the clip instead of applying an untracked cache. Only matching applied audio with completed assembly counts as success.
+
+`RECORDING_PENDING` (exit 1) means an earlier local recording task is unfinished; this call submitted no new recording. Use the returned `hs clip dub --pid <pid> --task <id>` command to continue, or `hs clip dub --pid <pid> --clip <clip> --cancel` to discard the pending preview. Do not blindly retry the new-recording command. When tracking an existing recording, stderr emits `hs.operation_existing`; `hs.operation_started` is reserved for a newly accepted operation.
+
+Concurrent hs calls sharing the same local state cannot submit two recordings for one clip: `CLIP_BUSY` (exit 75) means another call is still submitting. `ACTION_STATE_UNCERTAIN` (exit 7) means a submission lost its confirmed receipt; inspect the clip, then explicitly discard its pending recording with `--cancel` before starting another. `ACTION_STATE_UNAVAILABLE` (exit 1) means the local task records could not be read or saved; restore access and inspect remote state before repeating a write. Task records are saved under a cross-process lock so concurrent commands do not overwrite each other’s handles.

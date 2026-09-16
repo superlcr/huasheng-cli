@@ -102,7 +102,7 @@ hs settings subtitle-size 42
 **7. 交付。**
 
 ```bash
-hs export get --out ./out.mp4                # 下载成片
+hs export --out ./out.mp4                    # 下载成片
 hs publish --title "西湖冷知识"               # 看 --submit 会投出去的整份稿件;什么都不投
 hs publish --submit --title "西湖冷知识"      # 投稿到 B 站 —— 这一步是公开的
 ```
@@ -127,7 +127,7 @@ create → PLANNING
 | `PAUSED` | **它问了你一个问题** | `hs chat answer "…"`;若问的是「要不要照此方案开始制作」,用 `hs plan confirm` |
 | `PLAN_READY` | 分镜方案好了,此时还没扣过任何积分 | `hs plan show --cost`,然后 `hs plan confirm` |
 | `PRODUCING` | 正在一镜一镜渲染 | 等,或者先改已经好了的那几镜 |
-| `READY` | 做完了 | `hs export get` 或 `hs publish` |
+| `READY` | 做完了 | `hs export` 或 `hs publish` |
 | `FAILED` | 出错了 | `hs project show` 的 `reason` 会说明原因 |
 
 `hs wait` 会停在 `PAUSED`、`PLAN_READY`、`READY`、`FAILED` 四个状态。`hs project show` 和 `hs wait`
@@ -161,18 +161,18 @@ create → PLANNING
 | `hs project ls [--limit 20]` | 最近的项目 |
 | `hs project rm --pid <pid>` | 删掉一个 —— 立刻删,不可恢复 |
 | `hs use <pid>` / `hs use` / `hs use --clear` | 记住、查看、清除当前项目 |
-| `hs wait [--until any\|plan\|paused\|done] [--timeout 60]` | 一直等到需要你拿主意 |
-| `hs make … [--deadline <秒>] [--stall-timeout <秒>] [--detach]` | 以上全部一条命令跑完 —— 见上面的快速开始。`--deadline` 限制整条命令的总时长(默认不限),`--stall-timeout` 在这么久看不到任何变化时停下(默认 1800;`0` = 永不;实时进度事件能延长它,但从上次可见变化算起最多到 3 倍;一轮修复没有完成任何分镜又失败不算变化;排队、等空位的时间不计入),`--detach` 视频一建好就返回。两种停下都退出码 `5` 并给出续跑命令 |
+| `hs wait [--deadline <秒>]` | 默认等到需要决策、完成或失败；到期时，若已成功读取到尚未完成的状态，返回 `timed_out: true`、`still_running: true`，退出码 0；查询失败仍报错 |
+| `hs make … [--deadline <秒>] [--stall-timeout <秒>]` | 以上全部一条命令跑完 —— 见上面的快速开始。`--deadline` 限制整条命令的总时长(默认不限),`--stall-timeout` 在这么久看不到任何变化时停下(默认 1800;`0` = 永不;实时进度事件能延长它,但从上次可见变化算起最多到 3 倍;一轮修复没有完成任何分镜又失败不算变化;排队、等空位的时间不计入)。两种停下都退出码 `5` 并给出续跑命令 |
 
 ### 和花生对话
 
 | 命令 | 作用 |
 | :--- | :--- |
-| `hs chat answer <回答\|@文件> [--no-wait]` | 回答它正在等的那个问题 |
-| `hs chat send [--clip N \| --animation N] [--attach <id\|文件\|地址> …] [--slot-wait <秒>] <消息\|@文件>` | 随时提要求,也可明确指向一项;`--attach`(最多 8 个)把素材库里的素材递给它 —— 给文件或地址会先加进素材库,和 `hs material add` 一样计费。账号同时在跑的任务已满时,最多等 `--slot-wait` 秒(默认 600)空出位置(不是 `--wait`,那是 `hs clip` 的) |
+| `hs chat answer <回答\|@文件>` | 回答它正在等的那个问题 |
+| `hs chat send [--clip N \| --animation N] [--attach <id\|文件\|地址> …] [--deadline <秒>] <消息\|@文件>` | 随时提要求,也可明确指向一项;`--attach`(最多 8 个)把素材库里的素材递给它 —— 给文件或地址会先加进素材库,和 `hs material add` 一样计费。`--deadline` 限制整条命令，包括上传和等待任务空位，默认 0 表示不限时 |
 | `hs chat cancel` / `hs chat retry` / `hs chat clear` | 中止当前这轮、重跑一次、清空对话 |
 | `hs chat history [--limit 20] [--before <run_id>]` | 之前说过什么、每一轮改了什么;`--before` 往前翻页 |
-| `hs chat watch [--timeout 300]` | 实时跟着看它在做什么 |
+| `hs chat watch [--deadline <秒>]` | 实时跟着看它在做什么 |
 | `hs chat cost [--run <run_id>]` | 某一轮花了多少 |
 
 ### 分镜方案与成片
@@ -180,7 +180,7 @@ create → PLANNING
 | 命令 | 作用 |
 | :--- | :--- |
 | `hs plan show [--cost]` | 分镜方案;加 `--cost` 连报价一起看 |
-| `hs plan confirm [--slot-wait <秒>]` | 确认 —— **花积分,且不可撤销**。任务位置已满时最多等 `--slot-wait` 秒(默认 600) |
+| `hs plan confirm [--deadline <秒>]` | 确认 —— **花积分,且不可撤销**。`--deadline` 包含等待任务空位及确认后的继续执行，默认 0 表示不限时 |
 | `hs fast` / `hs fast on` / `hs fast off` | 查看、加入、退出快速通道(`hs fast` 会说插队要花多少;已排上队之后 `on` 是单向的) |
 
 ### 编辑分镜
@@ -196,12 +196,12 @@ create → PLANNING
 | `hs clip split --clip <#> --at <行号>` | 在某一行之后拆开 |
 | `hs clip merge --clip <#> --into <#>` | 并成一镜 |
 | `hs clip retry --clip <#>` | 重做失败的那一镜 |
-| `hs clip dub --clip <#> [--text "…"] [--undo] [--cancel]` | 单独重录这一镜的配音;`--text` 只重录改动的字词;`--cancel` 停掉还在生成的那次 |
+| `hs clip dub --clip <#> [--text "…"] [--undo] [--cancel]` | 单独重录这一镜的配音;`--text` 只重录改动的字词;`--cancel` 丢弃生成中或已就绪的试听，不改变已应用音频 |
 | `hs clip candidates --clip <#> [--like <uuid>] [--captions]` | 这一镜还有哪些画面可选;`--captions` 带上每段画面的内容描述 |
 | `hs clip pick --clip <#> --candidate <#\|uuid>` | 换成其中一个 |
 | `hs clip pick --clip <#> --file <mp4\|mov\|jpg\|png\|地址\|id> [--start <秒>] [--crop x,y,w,h]` | 改用你自己的画面 —— 免费;`--start` 指定从文件第几秒开始 |
 | `hs clip srt [--out <文件>]` | 导出 SRT 字幕 |
-| `hs clip wait --op <类型> [--clip <id>] [--count <n>] [--candidate <uuid>] [--text "…"] [--timeout <秒>]` | 只读:确认分镜改动已经落地(`--op edit` 配 `--text`:等到这段口播落地)—— 照抄编辑命令给出的 `next_command` |
+| `hs clip wait --op <类型> [--clip <id>] [--count <n>] [--candidate <uuid>] [--text "…"] [--deadline <秒>]` | 只读:确认分镜改动已经落地(`--op edit` 配 `--text`:等到这段口播落地)—— 照抄编辑命令给出的 `next_command` |
 
 ### 观感与声音
 
@@ -227,7 +227,7 @@ create → PLANNING
 **开始生产之后换音色**会把每个分镜重新配音、整片重新渲染,按字数扣花生米。
 已扣花生米不退;完成后若有对应的历史版本,可以撤销修改,先用 `hs snapshot ls` 检查。
 `hs settings voice <id> --cost` 只报价、什么都不改;不带 `--cost` 就真换,并一直等到所有分镜换完
-(`--no-wait` 立刻返回,之后 `hs project show` 会一直显示 `voice_changing` 直到换完)。
+(`--no-wait` 立刻返回,之后用 `hs wait --op voice` 等待配音与合成完成，不会重复换音色)。
 用你自己录音做旁白的视频没有音色可换。
 
 ```bash
@@ -280,7 +280,9 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 | `hs snapshot show <s编号>` | 只看某个时点长什么样,不跳过去 |
 | `hs snapshot undo` / `hs snapshot redo` / `hs snapshot goto <s编号>` | 在这些时点之间移动 |
 | `hs snapshot undo --run <run_id>` | 把花生某一轮做的事整个撤掉 |
-| `hs export start [--watermark] [--ai-mark\|--no-ai-mark]` / `hs export status --task <id>` / `hs export get [--out <文件>] [--timeout 300]` | 渲染并下载成片。「AI生成」角标默认跟随你账号的设置,这两个参数可以改(`hs make --out` 和 `hs publish` 也收) |
+| `hs export [--out <文件>] [--task <id>] [--deadline <秒>] [--watermark] [--ai-mark\|--no-ai-mark]` | 等待渲染并下载，默认不限总时长；`--task` 接着等同一次导出 |
+| `hs export --no-wait [--out <文件>]` | 提交后立即返回任务 ID，暂不下载；`--out` 保留在续跑命令中 |
+| `hs export status --task <id>` | 只查进度或成片链接，不新建任务、不下载 |
 | `hs publish [--title …] [--tag …] [--cover …] [--ai-label on\|off] [--set source=…]` | 投稿页链接,以及 `--submit` 会投出去的整份稿件;`--ai-label` 设 B 站的「AI 生成内容」声明(只有克隆音色的视频能改),转载必须给 `source` |
 | `hs publish --submit [--title …] [--tag …] [--cover …]` | 投稿到 B 站 —— **这一步会公开,且不可撤销** |
 | `hs mcp serve` | 以 MCP server 方式运行,给 AI 客户端用 |
@@ -332,3 +334,13 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 - `hs help env` —— 给 CI、容器与脚本用的环境变量
 - [脚本与自动化](automation.zh.md) —— JSON、退出码、批量控制
 - [登录、隐私与系统要求](security.zh.md) —— 凭据、联网范围、支持平台
+
+## 执行与恢复
+
+远端业务命令统一接受 `--deadline <秒>`，默认 0 表示不限整条命令的总时长。上传、等空位、请求、轮询和下载共用同一预算。输出为终端、管道或 JSON 不改变执行方式；本地命令、升级及常驻 `mcp serve` 不接受此参数。
+
+分镜 edit/add/rm/split/merge/pick/retry 默认等到修改生效；`--no-wait` 在提交被接受后返回只读检查命令。`hs clip wait --deadline 60` 在已查得仍未完成的状态时正常返回，读取失败仍是错误。
+
+重配音会等生成并应用；中断后用回执中的 `hs clip dub --task <id>` 恢复原任务；核对分镜版本和录音，避免覆盖后续修改。语速试听用 `hs settings speed <值> --preview --clip <id> --task <id>` 继续已有任务。自有素材登记后的恢复命令用素材 ID，保留裁剪与起点。
+
+投稿准备使用已有导出任务恢复，恢复命令保留稿件参数但不自动带 `--submit`。`publish --submit` 成功只表示平台接收稿件，仍需审核。

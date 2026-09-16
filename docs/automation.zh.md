@@ -2,6 +2,8 @@
 
 **简体中文** · [English](automation.md)
 
+`hs wait --deadline 60 --json` 适合有限时长的轮询循环。成功读到状态后，到期仍未完成会正常返回（`timed_out: true`、`still_running: true`、退出码 0）；没读到状态或查询失败仍报错。给 AI 客户端使用时，deadline 应短于宿主的命令时限。
+
 本页说明如何稳定地从脚本、CI 或批量任务调用 `hs`。人工操作与 AI 客户端接入见
 [主 README](../README.zh.md)。
 
@@ -50,12 +52,14 @@ $ hs project show --json
 | `1` | 命令失败 | 看 `error.code` |
 | `2` | 用法错误,什么都没跑 | 改命令行 |
 | `4` | 仅 `hs make`:成片或导出失败,或下面没列出的其他失败 | 检查后 `resume` |
-| `5` | 仅 `hs make`:达到安全上限、`--deadline`、`--stall-timeout`,或并发槽位一直满 | 检查后 `resume` |
+| `5` | make/export 达到 `--deadline`，或 wait 到期前未能取得状态；也包括 make 的安全上限或停滞 | 检查后 `resume` |
+| `130` | Ctrl-C 停止本地等待；再按一次强制退出，不取消服务端任务 | 使用已记录的任务 ID 和恢复命令 |
+| `143` | SIGTERM 停止本地等待，不取消服务端任务 | 使用已记录的任务 ID 和恢复命令 |
 | `6` | 花生米不足、需要会员、或今日额度用完(`INSUFFICIENT_POINTS`、`VIP_REQUIRED`、`DAILY_LIMIT`、`MEMBERSHIP_OR_LIMIT_REQUIRED`) | 充值 / 等到 `retry_at` |
 | `7` | 结果不明:`WRITE_OUTCOME_UNKNOWN`、`CREATE_OUTCOME_UNKNOWN`、`retryable: false` 的 `*_UNCERTAIN` | **先查状态再决定,别盲目重发** |
 | `8` | 需要人来登录:`NO_CREDENTIAL`、`CREDENTIAL_EXPIRED`、`NOT_LOGGED_IN`、`CSRF_FAILED` | `hs auth login` |
 | `9` | `ACCOUNT_RESTRICTED` 账号被风控限制 | 联系客服,重试没用 |
-| `75` | 临时失败:`RATE_LIMITED`、`NETWORK_ERROR`、`RUN_CONCURRENCY_LIMIT`、`STREAM_IDLE`、`DOWNLOAD_TIMEOUT`、`CLIP_BUSY`、`CALL_BUDGET_EXHAUSTED`、可重试的 `HTTP_ERROR`、`suggested_action: "retry"` 的 `NOT_LOGGED_IN`(hs 已替你续上会话)、`retryable: true` 的 `*_UNCERTAIN`(如 `PLAN_CONTINUATION_UNCERTAIN`) | 稍后原样再跑,有 `retry_after_ms` 就等够再跑 |
+| `75` | 临时失败:`RATE_LIMITED`、`NETWORK_ERROR`、`RUN_CONCURRENCY_LIMIT`、`STREAM_IDLE`、`STREAM_INTERRUPTED`、`DOWNLOAD_TIMEOUT`、`CLIP_BUSY`、`CALL_BUDGET_EXHAUSTED`、可重试的 `HTTP_ERROR`、`suggested_action: "retry"` 的 `NOT_LOGGED_IN`(hs 已替你续上会话)、`retryable: true` 的 `*_UNCERTAIN`(如 `PLAN_CONTINUATION_UNCERTAIN`) | 稍后原样再跑,有 `retry_after_ms` 就等够再跑 |
 
 其他错误码上的 `retryable: true`(如 `UPLOAD_FAILED` 或 `URL_UNREACHABLE`)表示再试可能有用,但退出码仍是 `1`(`hs make` 里是 `4`)。
 
@@ -80,7 +84,7 @@ $ hs project show --json
 
 ### 分镜编辑
 
-非终端或带 `--json` 时,分镜写操作默认最多等 30 秒看到落地(`--wait 0` 恢复「提交就回」)。
+所有输出模式下，分镜修改默认等到生效；`--no-wait` 表示提交被接受后返回。
 `applied: false` 仍表示「还在跑」而不是失败,并附 `next_command`:一条只读的 `hs clip wait --pid ... --op ...`,用来稍后确认。
 `hs wait` 给出 `retry_after_ms`(毫秒,排队时非零)和 `next_commands`:按执行顺序排列的命令列表 —— 没有可跑的就是空列表,遇到提问或需要继续等时一条,分镜方案待确认时两条(先 `hs plan show --cost`,再 `hs plan confirm`)。正因为最后这种情况它是复数;其余地方 hs 一律用单数的 `next_command`。
 
@@ -98,19 +102,19 @@ $ hs project show --json
 | `suggested_action: "retry"` 的 `NOT_LOGGED_IN` | `1` / make `4` | `75` |
 | `ACCOUNT_RESTRICTED` | `1` / make `4` | `9` |
 | `WRITE_OUTCOME_UNKNOWN`、`CREATE_OUTCOME_UNKNOWN`、`retryable: false` 的 `*_UNCERTAIN` | `1` / make `4` | `7` |
-| `RATE_LIMITED`、`NETWORK_ERROR`、`STREAM_IDLE`、`DOWNLOAD_TIMEOUT`、`CLIP_BUSY`、`CALL_BUDGET_EXHAUSTED`、可重试的 `HTTP_ERROR`、`retryable: true` 的 `*_UNCERTAIN` | `1` / make `4` | `75` |
+| `RATE_LIMITED`、`NETWORK_ERROR`、`STREAM_IDLE`、`STREAM_INTERRUPTED`、`DOWNLOAD_TIMEOUT`、`CLIP_BUSY`、`CALL_BUDGET_EXHAUSTED`、可重试的 `HTTP_ERROR`、`retryable: true` 的 `*_UNCERTAIN` | `1` / make `4` | `75` |
 | `RUN_CONCURRENCY_LIMIT` | `1` / make `4` | `75` / make `5` |
 | make 的 `REPAIR_STALLED`、`REPAIR_TIME_LIMIT` | `5` | 不再返回:这两种情况现在以 `MAKE_STALLED`(`5`)停下 |
 
 `hs make` 的 `4` 现在只剩上表没列出的失败。`0`、`2` 以及 `hs make` 的 `5`、`6` 含义不变。
 
-**非终端里分镜编辑会等。** 没有终端或带 `--json` 时,分镜编辑默认最多等 30 秒看到落地,不再提交就回;`--wait 0` 恢复旧行为。
+**分镜修改不再随输出模式改变执行。** 默认等到生效，`--no-wait` 在接受后返回，`--deadline` 限制整条命令总时长。
 
 **`hs make` 在 stderr 上报「已建成」。** `hs.created` 那一行写在 stderr;stdout 仍然只有一个 JSON。pid 从那一行取,或取最终结果里的 `pid` / `resume`。
 
 **多出来的字段。** 本地已知有新版本时 JSON 对象会带 `update: {latest, command}`;`hs wait` 新增 `needs_action`、`still_running`、`retry_after_ms` 和 `next_commands`。比对完整键集合的脚本要允许它们。
 
-**等待更久。** 命令等账号额度最多 `HS_RATE_LIMIT_WAIT` 秒(默认改为 900,原来 30)。`hs plan confirm` 和 `hs chat send` 最多等 `--slot-wait` 秒(默认 600)空出任务位置(`--wait` 是 `hs clip` 的「等落地」,这两个命令不认)。`hs make` 在 `--stall-timeout`(默认 1800 秒)内看不到任何可见变化(分镜数、状态、run)就以退出码 `5`(`MAKE_STALLED`)停下;实时进度事件能延长这条线,但从上次可见变化算起最多到 3 倍 `--stall-timeout`;`hs wait` 遇到提问或待确认的分镜方案立刻返回,不管 `--until` 是什么。完整清单见发版说明。
+**等待更久。** 命令等账号额度最多 `HS_RATE_LIMIT_WAIT` 秒(默认改为 900,原来 30)。`hs plan confirm` 和 `hs chat send` 等待任务空位也计入总 `--deadline` 预算（默认 0，不限时）。`hs make` 在 `--stall-timeout`(默认 1800 秒)内看不到任何可见变化(分镜数、状态、run)就以退出码 `5`(`MAKE_STALLED`)停下;实时进度事件能延长这条线,但从上次可见变化算起最多到 3 倍 `--stall-timeout`;`hs wait` 遇到提问或待确认的分镜方案立刻返回,视频做完或失败时也返回。完整清单见发版说明。
 
 ## 三条控制流约定
 
@@ -142,8 +146,18 @@ $ hs project show --json
 
 `REPAIR_CONTINUATION_UNCERTAIN` 表示修复已尝试提交，但尚未确认进展。CLI 在重启后保留已使用的修复次数，不会对同一个尚未确认的 run 重复提交修复。请先查看项目状态和对话记录。如果对话里失败之后没有新的一轮，说明修复没发到花生（例如 hs 恰好在发送前被杀）：用错误信息里给出的 `hs chat send --pid <pid> "…"` 自己发出，再续跑 `hs make`；新的一轮会解除这条记录。
 
-`hs make` 只会因为下面几种原因停下，都是退出码 `5` 并给出续跑命令：花费上限 `--max-repairs`（自动修复次数，默认 3，`REPAIR_LIMIT`）、`--max-questions`（`QUESTION_LIMIT`）、`--max-continuations`（`CONTINUATION_LIMIT`），以及时间上限 `--stall-timeout`（`MAKE_STALLED`）和 `--deadline`（`MAKE_DEADLINE`）。计数跨重启保留。一轮修复没有完成任何分镜、最后又失败，不算变化（修复中途有分镜完成就算），所以一直修不好的项目到 `--stall-timeout` 时以 `MAKE_STALLED` 停下，或更早在 `--max-repairs` 停下。排队和等空出任务位置的时间不计入。0.5.4 的 `--max-stalled-repairs`、`--max-repair-seconds` 仍然接受（旧的续跑命令照样能跑），但不再生效（不带 `--json` 时会提示一句）；不再返回 `REPAIR_STALLED`、`REPAIR_TIME_LIMIT`。
+`hs make` 只会因为下面几种原因停下，都是退出码 `5` 并给出续跑命令：花费上限 `--max-repairs`（自动修复次数，默认 3，`REPAIR_LIMIT`）、`--max-questions`（`QUESTION_LIMIT`）、`--max-continuations`（`CONTINUATION_LIMIT`），以及时间上限 `--stall-timeout`（`MAKE_STALLED`）和 `--deadline`（`DEADLINE_EXCEEDED`）。计数跨重启保留。一轮修复没有完成任何分镜、最后又失败，不算变化（修复中途有分镜完成就算），所以一直修不好的项目到 `--stall-timeout` 时以 `MAKE_STALLED` 停下，或更早在 `--max-repairs` 停下。排队和等空出任务位置的时间不计入。无效的 `--max-stalled-repairs`、`--max-repair-seconds` 已删除；不再返回 `REPAIR_STALLED`、`REPAIR_TIME_LIMIT`。
 
 `HS_PROGRESS=1 hs make ... --json` 在 stderr 输出带版本号的 `hs.progress` JSON 进度事件，stdout 仍只有最终结果。这是 CLI 轮询观察到的进度，不是花生主动推送的订阅。
 
 `REPAIR_CONTINUATION_UNCERTAIN` 保留结果未明的修复，并附查看对话的命令。明确的鉴权或配额拒绝允许稍后重试；响应丢失不能作为再修一次的依据。回答不同：花生对同一批问题只收一次答案，所以响应丢失后下一次会照常重发。`ANSWER_CONTINUATION_UNCERTAIN` 表示尚无法核实答案是否被收下；一次拒绝不能证明之前那次已生效。先查看对话并等待，再决定是否需要重新回答。`hs make` 遇到这种情况会继续等，不会停下。`REPAIR_LIMIT` 和 `MAKE_STALLED` 返回退出码 5 并给出续跑命令（`REPAIR_LIMIT` 时会写明更高的 `--max-repairs`）；执行前应检查项目。成片成功会清除旧修复窗口。
+
+## MCP 重配音恢复
+
+MCP 每次调用都有时间上限。调用 `huasheng_edit_clip` 的 `action: "redub"` 后保留 `action.operation.id`，用 `huasheng_wait_for_action` 查询。录音生成完成不等于已应用：出现 `action.next_call` 时，按其中的工具名和完整参数继续，用 `operation_id` 应用已有录音，不重新生成。工作台会自动完成续跑。等待工具不会应用音频；应用请求丢失响应时，通过原操作 ID 只读核验，不要重新发起录音来重试。
+
+CLI 配音恢复使用只读的 `hs clip wait --pid PID --clip CLIP --op dub`。录音已生成但未应用时返回 `needs_action: true`、`done: false`，有本机任务记录时给出完整的 `hs clip dub --task <id>` 命令；无记录则提示检查分镜，不能仅凭缓存应用。只有实际音频匹配且合成完成，才算成功。
+
+`RECORDING_PENDING`（退出码 1）表示已有未完成的本机录音任务，本次没有提交新录音。按返回的 `hs clip dub --pid <pid> --task <id>` 继续，或用 `hs clip dub --pid <pid> --clip <clip> --cancel` 丢弃待处理试听；不要原样重试新录音命令。 跟踪已有录音时，stderr 输出 `hs.operation_existing`；`hs.operation_started` 仅表示新操作已受理。
+
+共享同一本机状态目录的 hs 调用不会同时为同一分镜提交两次配音：`CLIP_BUSY`（退出码 75）表示另一调用仍在提交。`ACTION_STATE_UNCERTAIN`（退出码 7）表示提交未获得已确认的回执；先检查分镜，再显式用 `--cancel` 丢弃待处理录音后重新生成。`ACTION_STATE_UNAVAILABLE`（退出码 1）表示本机任务记录无法读取或保存；恢复访问并检查远端状态后再决定是否重复写入。任务保存使用跨进程互斥，避免并发命令互相覆盖句柄。
