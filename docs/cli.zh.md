@@ -170,8 +170,8 @@ create → PLANNING
 | :--- | :--- |
 | `hs chat answer <回答\|@文件>` | 回答它正在等的那个问题 |
 | `hs chat send [--clip N \| --animation N] [--attach <id\|文件\|地址> …] [--deadline <秒>] <消息\|@文件>` | 随时提要求,也可明确指向一项;`--attach`(最多 8 个)把素材库里的素材递给它 —— 给文件或地址会先加进素材库,和 `hs material add` 一样计费。`--deadline` 限制整条命令，包括上传和等待任务空位，默认 0 表示不限时 |
-| `hs chat cancel` / `hs chat retry` / `hs chat clear` | 中止当前这轮、重跑一次、清空对话 |
-| `hs chat history [--limit 20] [--before <run_id>]` | 之前说过什么、每一轮改了什么;`--before` 往前翻页 |
+| `hs chat cancel` / `hs chat retry` | 中止当前这轮、重跑一次 |
+| `hs chat history [--limit 20] [--before <run_id>]` | 之前说过什么;`--before` 往前翻页 |
 | `hs chat watch [--deadline <秒>]` | 实时跟着看它在做什么 |
 | `hs chat cost [--run <run_id>]` | 某一轮花了多少 |
 
@@ -279,7 +279,6 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 | `hs snapshot ls` | 可以回到哪些时点 |
 | `hs snapshot show <s编号>` | 只看某个时点长什么样,不跳过去 |
 | `hs snapshot undo` / `hs snapshot redo` / `hs snapshot goto <s编号>` | 在这些时点之间移动 |
-| `hs snapshot undo --run <run_id>` | 把花生某一轮做的事整个撤掉 |
 | `hs export [--out <文件>] [--task <id>] [--deadline <秒>] [--watermark] [--ai-mark\|--no-ai-mark]` | 等待渲染并下载，默认不限总时长；`--task` 接着等同一次导出 |
 | `hs export --no-wait [--out <文件>]` | 提交后立即返回任务 ID，暂不下载；`--out` 保留在续跑命令中 |
 | `hs export status --task <id>` | 只查进度或成片链接，不新建任务、不下载 |

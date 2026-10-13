@@ -179,8 +179,8 @@ Anything below that takes `--pid` can omit it once you have run `hs use <pid>`.
 | :--- | :--- |
 | `hs chat answer <answer\|@file>` | Answer the question it is waiting on |
 | `hs chat send [--clip N \| --animation N] [--attach <id\|file\|url> …] [--deadline <s>] <message\|@file>` | Give a direction, optionally about one exact item; `--attach` (up to 8) hands it footage from your library — a file or URL is added to the library first, billed like `hs material add`. The total `--deadline` includes uploads and waiting for a task slot; default 0 means unlimited |
-| `hs chat cancel` / `hs chat retry` / `hs chat clear` | Stop the current run, run it again, or clear the thread |
-| `hs chat history [--limit 20] [--before <run_id>]` | What has been said so far, and what each round changed; `--before` pages further back |
+| `hs chat cancel` / `hs chat retry` | Stop the current run, or run it again |
+| `hs chat history [--limit 20] [--before <run_id>]` | What has been said so far; `--before` pages further back |
 | `hs chat watch [--deadline <seconds>]` | Follow along while it works |
 | `hs chat cost [--run <run_id>]` | What one run cost |
 
@@ -292,7 +292,6 @@ Offering footage with `--material` or `--folder` does not force Huasheng to use 
 | `hs snapshot ls` | Points you can go back to |
 | `hs snapshot show <s-number>` | Look at a checkpoint without moving |
 | `hs snapshot undo` / `hs snapshot redo` / `hs snapshot goto <s-number>` | Move between them |
-| `hs snapshot undo --run <run_id>` | Roll back everything one round of Huasheng's work did |
 | `hs export [--out <file>] [--task <id>] [--deadline <seconds>] [--watermark] [--ai-mark\|--no-ai-mark]` | Wait for rendering and download. No time limit by default. `--task` resumes the same export |
 | `hs export --no-wait [--out <file>]` | Submit and return a task ID immediately; no download yet. `--out` is retained in the resume command |
 | `hs export status --task <id>` | Read progress and the finished URL; never start a task or download a file |
