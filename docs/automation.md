@@ -58,7 +58,7 @@ Anything other than `0` is a failure, so `!= 0` checks keep working.
 | `5` | make/export reached `--deadline`, or wait could not obtain a state before it; also make safety limits and stalls | inspect, then `resume` |
 | `130` | Ctrl-C stopped local waiting; press again to force exit. No server cancellation was sent | use the recorded task ID and resume command |
 | `143` | SIGTERM stopped local waiting; no server cancellation was sent | use the recorded task ID and resume command |
-| `6` | out of credits, membership needed, or today's limit used up (`INSUFFICIENT_POINTS`, `VIP_REQUIRED`, `DAILY_LIMIT`, `MEMBERSHIP_OR_LIMIT_REQUIRED`) | top up / wait for `retry_at` |
+| `6` | out of credits, membership needed, or today's limit used up (`INSUFFICIENT_POINTS`, `VIP_REQUIRED`, `DAILY_LIMIT`) | top up / wait for `retry_at` |
 | `7` | result unknown: `WRITE_OUTCOME_UNKNOWN`, `CREATE_OUTCOME_UNKNOWN`, `*_UNCERTAIN` with `retryable: false` | **check state before retrying** |
 | `8` | a person has to sign in: `NO_CREDENTIAL`, `CREDENTIAL_EXPIRED`, `NOT_LOGGED_IN`, `CSRF_FAILED` | `hs auth login` |
 | `9` | `ACCOUNT_RESTRICTED` | contact support; retrying will not help |
@@ -113,7 +113,6 @@ Anything that only checks `!= 0` keeps working. Scripts that branch on specific 
 | Error | Before | Now |
 |---|---|---|
 | `INSUFFICIENT_POINTS`, `VIP_REQUIRED`, `DAILY_LIMIT` outside `hs make` | `1` | `6` (unchanged in `hs make`) |
-| `MEMBERSHIP_OR_LIMIT_REQUIRED` (new) | — | `6` |
 | `NO_CREDENTIAL`, `CREDENTIAL_EXPIRED`, `NOT_LOGGED_IN`, `CSRF_FAILED` | `1` / make `4` | `8` |
 | `NOT_LOGGED_IN` with `suggested_action: "retry"` | `1` / make `4` | `75` |
 | `ACCOUNT_RESTRICTED` | `1` / make `4` | `9` |

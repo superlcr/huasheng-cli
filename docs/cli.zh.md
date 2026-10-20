@@ -35,7 +35,7 @@ hs make --pid 123456789012345                         # 从上次停下的地方
 能从任何一步接着往下跑。`make` 中途停在任何地方,都会打印出**从这里接着走的那条完整命令** ——
 照抄那一行,别重跑你最初那条。
 
-可选项目语言：`hs project create` 和新建模式的 `hs make --script/--audio` 支持 `--locale en-US` 或 `--locale zh-CN`；是否生效取决于服务版本，省略时使用默认语言。`hs make --pid` 沿用已有语言，不接受 `--locale`。MCP 的 `huasheng_create_project` 同样支持可选的 `locale` 字段。
+可选项目语言：`hs project create` 和新建模式的 `hs make --script/--audio` 支持 `--locale en-US` 或 `--locale zh-CN`。`en-US` 做英文视频，省略时做中文视频。`hs make --pid` 沿用已有语言，不接受 `--locale`。MCP 的 `huasheng_create_project` 同样支持可选的 `locale` 字段。
 
 ## 一步一步来
 
@@ -251,7 +251,9 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 改语速会应用到之后的预览和导出,无需重新生成分镜。
 `hs settings speed 1.3 --preview [--clip N]` 把一镜按这个语速渲染一段试听,什么都不改。
 
-`hs mg ls` / `hs mg show <id>` / `hs mg hide <id>` 控制动画的显示与隐藏,`hs mg rm <id>` 彻底删掉一条;动画内容本身不在 CLI 里改。
+`hs mg ls` / `hs mg show <id>` / `hs mg hide <id>` 控制动画的显示与隐藏,`hs mg rm <id>` 彻底删掉一条。
+`hs mg add --clip N ["想要的内容"]`、`hs mg edit <id> "要改什么"` 请花生新加或修改一段动画 ——
+它们是对话里的请求(等同 `hs chat send --clip` / `--animation`),之后用 `hs wait` 跟进。
 
 ### 自己的素材与偏好
 
@@ -282,6 +284,7 @@ hs voice ls --json           # 多给一个 preview_url,可以先听再选
 | `hs export [--out <文件>] [--task <id>] [--deadline <秒>] [--watermark] [--ai-mark\|--no-ai-mark]` | 等待渲染并下载，默认不限总时长；`--task` 接着等同一次导出 |
 | `hs export --no-wait [--out <文件>]` | 提交后立即返回任务 ID，暂不下载；`--out` 保留在续跑命令中 |
 | `hs export status --task <id>` | 只查进度或成片链接，不新建任务、不下载 |
+| `hs export cancel --task <id>` | 停掉还在渲染的导出;已经导完的不受影响 |
 | `hs publish [--title …] [--tag …] [--cover …] [--ai-label on\|off] [--set source=…]` | 投稿页链接,以及 `--submit` 会投出去的整份稿件;`--ai-label` 设 B 站的「AI 生成内容」声明(只有克隆音色的视频能改),转载必须给 `source` |
 | `hs publish --submit [--title …] [--tag …] [--cover …]` | 投稿到 B 站 —— **这一步会公开,且不可撤销** |
 | `hs mcp serve` | 以 MCP server 方式运行,给 AI 客户端用 |

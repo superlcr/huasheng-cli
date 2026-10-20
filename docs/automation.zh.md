@@ -55,7 +55,7 @@ $ hs project show --json
 | `5` | make/export 达到 `--deadline`，或 wait 到期前未能取得状态；也包括 make 的安全上限或停滞 | 检查后 `resume` |
 | `130` | Ctrl-C 停止本地等待；再按一次强制退出，不取消服务端任务 | 使用已记录的任务 ID 和恢复命令 |
 | `143` | SIGTERM 停止本地等待，不取消服务端任务 | 使用已记录的任务 ID 和恢复命令 |
-| `6` | 花生米不足、需要会员、或今日额度用完(`INSUFFICIENT_POINTS`、`VIP_REQUIRED`、`DAILY_LIMIT`、`MEMBERSHIP_OR_LIMIT_REQUIRED`) | 充值 / 等到 `retry_at` |
+| `6` | 花生米不足、需要会员、或今日额度用完(`INSUFFICIENT_POINTS`、`VIP_REQUIRED`、`DAILY_LIMIT`) | 充值 / 等到 `retry_at` |
 | `7` | 结果不明:`WRITE_OUTCOME_UNKNOWN`、`CREATE_OUTCOME_UNKNOWN`、`retryable: false` 的 `*_UNCERTAIN` | **先查状态再决定,别盲目重发** |
 | `8` | 需要人来登录:`NO_CREDENTIAL`、`CREDENTIAL_EXPIRED`、`NOT_LOGGED_IN`、`CSRF_FAILED` | `hs auth login` |
 | `9` | `ACCOUNT_RESTRICTED` 账号被风控限制 | 联系客服,重试没用 |
@@ -97,7 +97,6 @@ $ hs project show --json
 | 错误 | 以前 | 现在 |
 |---|---|---|
 | `hs make` 以外的 `INSUFFICIENT_POINTS`、`VIP_REQUIRED`、`DAILY_LIMIT` | `1` | `6`(`hs make` 里不变) |
-| `MEMBERSHIP_OR_LIMIT_REQUIRED`(新) | — | `6` |
 | `NO_CREDENTIAL`、`CREDENTIAL_EXPIRED`、`NOT_LOGGED_IN`、`CSRF_FAILED` | `1` / make `4` | `8` |
 | `suggested_action: "retry"` 的 `NOT_LOGGED_IN` | `1` / make `4` | `75` |
 | `ACCOUNT_RESTRICTED` | `1` / make `4` | `9` |

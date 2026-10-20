@@ -40,7 +40,7 @@ anything is charged, take the long way round below — `hs make --pid <pid>` pic
 wherever you stopped. If `make` stops anywhere, it prints the exact command that continues from
 that point — copy that line rather than re-running your original one.
 
-Optional project language: use `--locale en-US` or `--locale zh-CN` with `hs project create` or a new `hs make --script/--audio` request. Support depends on the service version. Omit for the default; `hs make --pid` resumes that language and does not accept `--locale`. MCP `huasheng_create_project` accepts the same optional `locale` field.
+Optional project language: use `--locale en-US` or `--locale zh-CN` with `hs project create` or a new `hs make --script/--audio` request. `en-US` makes an English video; omit for Chinese. `hs make --pid` resumes that language and does not accept `--locale`. MCP `huasheng_create_project` accepts the same optional `locale` field.
 
 ## The long way round: step by step
 
@@ -263,8 +263,9 @@ id — it will not guess, because the wrong voice means re-recording the whole v
 Changing the pace applies to previews and the export from then on; nothing to rebuild.
 `hs settings speed 1.3 --preview [--clip N]` renders one clip at that pace to listen to, changing nothing.
 
-`hs mg ls` / `hs mg show <id>` / `hs mg hide <id>` show or hide motion graphics; `hs mg rm <id>` deletes one for good. Their content is
-not editable from the CLI.
+`hs mg ls` / `hs mg show <id>` / `hs mg hide <id>` show or hide motion graphics; `hs mg rm <id>` deletes one for good.
+`hs mg add --clip N ["what it should show"]` and `hs mg edit <id> "what to change"` ask Huasheng to add or change one —
+they are requests in the conversation (the same as `hs chat send --clip` / `--animation`), so follow them with `hs wait`.
 
 ### Your own footage and preferences
 
@@ -295,6 +296,7 @@ Offering footage with `--material` or `--folder` does not force Huasheng to use 
 | `hs export [--out <file>] [--task <id>] [--deadline <seconds>] [--watermark] [--ai-mark\|--no-ai-mark]` | Wait for rendering and download. No time limit by default. `--task` resumes the same export |
 | `hs export --no-wait [--out <file>]` | Submit and return a task ID immediately; no download yet. `--out` is retained in the resume command |
 | `hs export status --task <id>` | Read progress and the finished URL; never start a task or download a file |
+| `hs export cancel --task <id>` | Stop an export that is still rendering; a finished one is left as it is |
 | `hs publish [--title …] [--tag …] [--cover …] [--ai-label on\|off] [--set source=…]` | The upload page link, and exactly what `--submit` would post; `--ai-label` sets Bilibili's AI-content declaration (only allowed on videos narrated by a cloned voice), `source` is required for a reposted video |
 | `hs publish --submit [--title …] [--tag …] [--cover …]` | Post it to Bilibili — **this makes it public and cannot be undone** |
 | `hs mcp serve` | Run as an MCP server so an AI client can use Huasheng |
