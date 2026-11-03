@@ -40,12 +40,19 @@ hs make --pid 123456789012345                         # 从上次停下的地方
 
 ## AI 视频生成
 
+项目就绪时，可以指定分镜和完整参数直接生成。`--spec` 接收 JSON 或 `@文件`；也可一次给齐 `--prompt`、`--model`、`--resolution`、`--ratio`、`--duration`，可选 `--materials` JSON，两种写法不能混用。估价接受同样的输入，指定分镜时不要求已有待答表单。
+
+生成返回 `accepted:true, applied:false`，按返回的 `video status` 命令只读查询是否已应用，不要重复执行 generate 来等待。status 查询本机最近一次提交，`--run` 防止查成后来提交的另一轮。查询可以从近期历史中匹配原请求，恢复丢失的回执，不会重发生成。希望 Agent 先建议参数时，使用下面的对话和表单路径。
+
 用 `hs chat send --pid <pid> --clip 1 "为这一镜生成新画面"` 发起需求，再用 `hs project show --pid <pid> --json` 读取待答表单。
 
 ```sh
 hs video models --json
+hs video price --pid <pid> --clip 2 --spec @generation.json --json
+hs video generate --pid <pid> --clip 2 --spec @generation.json --json
+hs video status --pid <pid> --run <run_id> --json
 hs video price --pid <pid> --video-generation @generation.json --json
-hs chat answer --pid <pid> "生成这一镜" --video-generation @generation.json
+hs chat answer --pid <pid> --video-generation @generation.json
 hs chat answer --pid <pid> "取消视频生成"
 ```
 

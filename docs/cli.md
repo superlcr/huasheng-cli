@@ -45,12 +45,19 @@ Optional project language: use `--locale en-US` or `--locale zh-CN` with `hs pro
 
 ## AI video generation
 
-Ask for an AI-generated shot with `hs chat send --pid <pid> --clip 1 "Generate a new scene for this shot"`. Read the pending form with `hs project show --pid <pid> --json`.
+For a ready project, generate directly with a clip and complete settings. `--spec` accepts JSON or `@file`; alternatively supply all five `--prompt`, `--model`, `--resolution`, `--ratio`, `--duration` fields and optional `--materials` JSON. Do not mix these forms. Price accepts the same inputs and needs no pending question when a clip is supplied.
+
+Generation returns `accepted:true, applied:false`. Poll the returned `video status` command to verify the new material is applied; do not repeat generate to poll. Status reads the latest hs submission for the project; `--run` prevents accidentally tracking a newer submission. It can recover a lost receipt from the exact request in recent history, without submitting again.
+
+When you want the Agent to propose settings first, use `hs chat send --pid <pid> --clip 1 "Generate a new scene for this shot"`, then read the pending form with `hs project show --pid <pid> --json` and answer it.
 
 ```sh
 hs video models --json
+hs video price --pid <pid> --clip 2 --spec @generation.json --json
+hs video generate --pid <pid> --clip 2 --spec @generation.json --json
+hs video status --pid <pid> --run <run_id> --json
 hs video price --pid <pid> --video-generation @generation.json --json
-hs chat answer --pid <pid> "Generate this shot" --video-generation @generation.json
+hs chat answer --pid <pid> --video-generation @generation.json
 hs chat answer --pid <pid> "Cancel the video generation"
 ```
 
