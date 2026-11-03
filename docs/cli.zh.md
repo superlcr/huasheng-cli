@@ -37,6 +37,20 @@ hs make --pid 123456789012345                         # 从上次停下的地方
 
 可选项目语言：`hs project create` 和新建模式的 `hs make --script/--audio` 支持 `--locale en-US` 或 `--locale zh-CN`。`en-US` 做英文视频，省略时做中文视频。`hs make --pid` 沿用已有语言，不接受 `--locale`。MCP 的 `huasheng_create_project` 同样支持可选的 `locale` 字段。
 
+
+## AI 视频生成
+
+用 `hs chat send --pid <pid> --clip 1 "为这一镜生成新画面"` 发起需求，再用 `hs project show --pid <pid> --json` 读取待答表单。
+
+```sh
+hs video models --json
+hs video price --pid <pid> --video-generation @generation.json --json
+hs chat answer --pid <pid> "生成这一镜" --video-generation @generation.json
+hs chat answer --pid <pid> "取消视频生成"
+```
+
+设置文件包含 `prompt`、目录里的精确 `model` 名称、`resolution`、`ratio`、整数 `duration`（5–15 秒），可选 `materials:[{"id":123,"type":"image"}]`。参考素材使用表单或 `hs material ls --uploads` 返回的本地素材 ID；最多 9 图和 3 视频，参考视频合计不超过 15 秒。提交前会校验模型规格和素材真实类型、时长。`video price` 不带设置文件时估算当前表单；估算包含参考素材费用，不锁价；生成素材后续的自动解析可能另行扣费，不包含在此估算中。与网页表单一致，参考视频先向上取整到整秒再估价；实际计费可能使用小数秒、最后才取整总积分。不带 `--video-generation` 的普通回答用于取消或修改要求，不确认生成。自动 `make` 会在此表单停下，等待明确参数。
+
 ## 一步一步来
 
 `hs make` 就是把下面这些步骤跑成一个循环。想先读分镜、改口播、调整观感再付钱,就自己走。

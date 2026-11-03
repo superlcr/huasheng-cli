@@ -42,6 +42,20 @@ that point — copy that line rather than re-running your original one.
 
 Optional project language: use `--locale en-US` or `--locale zh-CN` with `hs project create` or a new `hs make --script/--audio` request. `en-US` makes an English video; omit for Chinese. `hs make --pid` resumes that language and does not accept `--locale`. MCP `huasheng_create_project` accepts the same optional `locale` field.
 
+
+## AI video generation
+
+Ask for an AI-generated shot with `hs chat send --pid <pid> --clip 1 "Generate a new scene for this shot"`. Read the pending form with `hs project show --pid <pid> --json`.
+
+```sh
+hs video models --json
+hs video price --pid <pid> --video-generation @generation.json --json
+hs chat answer --pid <pid> "Generate this shot" --video-generation @generation.json
+hs chat answer --pid <pid> "Cancel the video generation"
+```
+
+The settings file contains `prompt`, the exact catalog `model` name, `resolution`, `ratio`, integer `duration` (5–15 seconds), and optional `materials:[{"id":123,"type":"image"}]`. Use local reference ids from the form or `hs material ls --uploads`, up to 9 images and 3 videos with at most 15 reference-video seconds in total. Model specifications, material types and durations are checked before submission. `video price` without a settings file prices the current form. Estimates include reference charges and are not locked quotes. Automatic analysis of the generated material may be billed separately and is not included. Like the web form, reference-video seconds are rounded up before pricing; final billing may use fractional seconds and round only the total credits. Plain text without `--video-generation` cancels or revises a request; it does not confirm generation. Automated `make` stops at this form for explicit settings.
+
 ## The long way round: step by step
 
 `hs make` is those steps in a loop. Run them yourself when you want to read the storyboard,
